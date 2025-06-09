@@ -1,0 +1,22 @@
+id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,NearestStation,Reading
+1,2,つくばサバゲーランド,3700,(要相談)????,35.95951922179579,140.1973409568622,https://tsukusaba.com/,https://coubic.com/tsukusaba/558964#pageContent,https://coubic.com/tsukusaba/2116445#pageContent,つくばさばげーらんど,竜ヶ崎市駅
+2,2,C.A.T.facility,3000,45000,35.93433392473249,140.21648044436543,https://www.catfacility.com/,https://www.catfacility.com/book-online,https://coubic.com/1sabakan/4876191#pageContent,きゃっとふぁしりてぃ,竜ヶ崎市駅
+3,2,サバイバルカントリー,3300,(30人まで)99000,35.935471324591035,140.2156312392577,https://survival-country.jp/access/,https://coubic.com/1sabakan/booking_pages#pageContent,https://coubic.com/1sabakan/4876191#pageContent,さばいばるかんとりー,竜ヶ崎市駅
+5,1,大将軍,3500,(10人まで)30000,35.92062588241885,139.9417573627606,https://www.daisyougun.com/,,https://www.daisyougun.com/%E7%84%A1%E6%96%99%E9%80%81%E8%BF%8E%E4%BA%88%E7%B4%84/,だいしょうぐん,柏たなか駅
+6,1,東京サバゲーパーク,(ドリンクバー付)4000,(要相談)????,35.7904872248783,140.15006194789763,https://www.tokyosabagepark.jp/,https://www.tokyosabagepark.jp/reservation.php,https://www.tokyosabagepark.jp/transfer.php,とうきょうさばげーぱーく,印西牧の原駅
+7,1,U-box,3300,(10人まで)33000,35.76098266159436,140.250029460453,https://u-box.space/,https://u-box.space/reservation,https://u-box.space/bus,ゆーぼっくす,京成酒々井駅
+8,1,フォレストユニオン,3300,(10人まで)33000,35.76111248266575,140.2508062533741,https://forest-union.jp/,https://forest-union.jp/yoyaku,https://forest-union.jp/bus,ふぉれすとゆにおん,京成酒々井駅
+9,1,デザートユニオン,3300,(10人まで)33000,35.76958274177844,140.2507614825009,https://desert-union.jp/,https://desert-union.jp/yoyaku,https://desert-union.jp/bus,でざーとゆにおん,京成酒々井駅
+10,1,M.E.T.ユニオン,3700,(10人まで)27000,35.76775135412802,140.25057390205524,https://union-base.com/met,https://union-base.com/yoyaku,https://union-base.com/bus#form,めっとゆにおん,京成酒々井駅
+11,1,アリーナシャングリラ,3500,(3人まで)15000,35.71652258104732,140.09179260842797,https://arenashangri-la.mokei-paddock.com/,https://select-type.com/rsv/?id=sumet4H6e_0&c_id=36522,,ありーなしゃんぐりら,八千代縁が丘駅または京成八千代台駅
+12,1,ホワイトベース,3500,(土祝20人まで)60000,35.804713889762,140.06183802303408,http://www.whitebase-sgf.com/,http://www.whitebase-sgf.com/contents/status/,http://www.whitebase-sgf.com/contact/forms/index/2,ほわいとべーす,白井駅
+13,1,Rock Hill,,,,,,,,,
+14,0,ASOBIBA 池袋店,,,,,,,,,
+15,0,ASOBIBA 新木場店,,,,,,,,,
+16,0,BravePoint 新宿店,,,,,,,,,
+17,1,HEAD SHOT,,,,,,,,,
+18,1,リトルヘッドショット,,,,,,,,,
+19,1,ユニオンベース,,,,,,,,,
+20,1,UNION STADIUM,,,,,,,,,
+21,1,No.9,,,,,,,,,
+22,1,SAVAS,,,,,,,,,
