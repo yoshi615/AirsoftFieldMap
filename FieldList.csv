@@ -1,4 +1,4 @@
-id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,NearestStation,Reading
+id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation
 1,2,つくばサバゲーランド,3700,(要相談)????,35.95951922179579,140.1973409568622,https://tsukusaba.com/,https://coubic.com/tsukusaba/558964#pageContent,https://coubic.com/tsukusaba/2116445#pageContent,つくばさばげーらんど,竜ヶ崎市駅
 2,2,C.A.T.facility,3000,45000,35.93433392473249,140.21648044436543,https://www.catfacility.com/,https://www.catfacility.com/book-online,https://coubic.com/1sabakan/4876191#pageContent,きゃっとふぁしりてぃ,竜ヶ崎市駅
 3,2,サバイバルカントリー,3300,(30人まで)99000,35.935471324591035,140.2156312392577,https://survival-country.jp/access/,https://coubic.com/1sabakan/booking_pages#pageContent,https://coubic.com/1sabakan/4876191#pageContent,さばいばるかんとりー,竜ヶ崎市駅
@@ -10,13 +10,14 @@ id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookL
 10,1,M.E.T.ユニオン,3700,(10人まで)27000,35.76775135412802,140.25057390205524,https://union-base.com/met,https://union-base.com/yoyaku,https://union-base.com/bus#form,めっとゆにおん,京成酒々井駅
 11,1,アリーナシャングリラ,3500,(3人まで)15000,35.71652258104732,140.09179260842797,https://arenashangri-la.mokei-paddock.com/,https://select-type.com/rsv/?id=sumet4H6e_0&c_id=36522,,ありーなしゃんぐりら,八千代縁が丘駅または京成八千代台駅
 12,1,ホワイトベース,3500,(土祝20人まで)60000,35.804713889762,140.06183802303408,http://www.whitebase-sgf.com/,http://www.whitebase-sgf.com/contents/status/,http://www.whitebase-sgf.com/contact/forms/index/2,ほわいとべーす,白井駅
-13,1,Rock Hill,,,,,,,,,
-14,0,ASOBIBA 池袋店,,,,,,,,,
-15,0,ASOBIBA 新木場店,,,,,,,,,
-16,0,BravePoint 新宿店,,,,,,,,,
-17,1,HEAD SHOT,,,,,,,,,
-18,1,リトルヘッドショット,,,,,,,,,
-19,1,ユニオンベース,,,,,,,,,
-20,1,UNION STADIUM,,,,,,,,,
-21,1,No.9,,,,,,,,,
-22,1,SAVAS,,,,,,,,,
+13,1,Rock Hill,,,35.815427467131904,140.08629143439552,,,,ろっくひる,
+14,0,ASOBIBA 池袋店,,,35.724548697722646,139.71160474892412,,,,あそびばいけぶくろてん,
+15,0,ASOBIBA 新木場店,,,35.644815671605905,139.82281667180249,,,,あそびばしんきばてん,
+16,0,BravePoint 新宿店,,,35.69587030904674,139.70157770032463,,,,ぶれいぶぽいんとしんじゅくてん,
+17,1,HEAD SHOT,,,35.767108599192944,140.24920331505544,,,,へっどしょっと,
+18,1,リトルヘッドショット,,,35.76460637154968,140.24902271001383,,,,りとるへっどしょっと,
+19,1,ユニオンベース,,,35.768295340635696,140.24987346331494,,,,ゆにおんべーす,
+20,1,UNION STADIUM,,,35.76854614308439,140.25243934227103,,,,ゆにおんすたじあむ,
+21,1,No.9,,,35.76201411364655,140.16511390139976,,,,なんばーないん,
+22,1,SAVAS,,,35.780928842878126,140.16573815158245,,,,ざばす,
+23,0,BravePoint 台場店,,,35.629080123746554,139.77660081591063,,,,ぶれいぶぽいんとだいばてん,

@@ -106,7 +106,7 @@ function init() {
 
 		// マーカー生成
 		allRows.forEach((row, index) => {
-			const [id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,NearestStation,Reading] = row;
+			const [id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation] = row;
 			const latNum = parseFloat(lat);
 			const lonNum = parseFloat(lon);
 			if (
@@ -142,11 +142,19 @@ function init() {
 					lastClickedMarker = null;
 				} else {
 					if (infoPanel) {
+						let linksHtml = '';
+						if (SiteLink && String(SiteLink).trim() !== '') {
+							linksHtml += `<a href="${SiteLink}" target="_blank">サイトリンク</a><br>`;
+						}
+						if (BookLink && String(BookLink).trim() !== '') {
+							linksHtml += `<a href="${BookLink}" target="_blank">予約リンク</a><br>`;
+						}
+						if (BusBookLink && String(BusBookLink).trim() !== '') {
+							linksHtml += `<a href="${BusBookLink}" target="_blank">バス予約リンク</a><br>`;
+						}
 						infoPanel.innerHTML = `
 							<h2>${field_name}</h2>
-							<a href="${SiteLink}" target="_blank">サイトリンク</a><br>
-							<a href="${BookLink}" target="_blank">予約リンク</a><br>
-							<a href="${BusBookLink}" target="_blank">バス予約リンク</a><br>
+							${linksHtml}
 							<p>最寄り駅: ${NearestStation}</p>
 							<p>定期会料金: ${RegularMeetingCharge}円</p>
 							<p>貸し切り料金: ${CharterCharge}円</p>
@@ -160,11 +168,19 @@ function init() {
 				if (leftPanel) {
 					leftPanel.classList.remove('closed');
 					document.body.classList.add('panel-open');
+					let linksHtml = '';
+					if (SiteLink && String(SiteLink).trim() !== '') {
+						linksHtml += `<a href="${SiteLink}" target="_blank">サイトリンク</a><br>`;
+					}
+					if (BookLink && String(BookLink).trim() !== '') {
+						linksHtml += `<a href="${BookLink}" target="_blank">予約リンク</a><br>`;
+					}
+					if (BusBookLink && String(BusBookLink).trim() !== '') {
+						linksHtml += `<a href="${BusBookLink}" target="_blank">バス予約リンク</a><br>`;
+					}
 					leftPanel.innerHTML = `
 						<h2>${field_name}</h2>
-						<a href="${SiteLink}" target="_blank">サイトリンク</a><br>
-						<a href="${BookLink}" target="_blank">予約リンク</a><br>
-						<a href="${BusBookLink}" target="_blank">バス予約リンク</a><br>
+						${linksHtml}
 						<p>最寄り駅: ${NearestStation}</p>
 						<p>定期会料金: ${RegularMeetingCharge}円</p>
 						<p>貸し切り料金: ${CharterCharge}円</p>
@@ -211,6 +227,8 @@ function init() {
 		let html = '<ul class="marker-list">';
 		rowsToShow.forEach(row => {
 			const [id, , field_name] = row;
+			// フィールド名が空・null・undefinedの場合はスキップ
+			if (!field_name || String(field_name).trim() === '') return;
 			html += `<li><button class="marker-list-btn" data-marker-id="${id}">${field_name}</button></li>`;
 		});
 		html += '</ul>';
@@ -263,62 +281,65 @@ function init() {
 			const keywordKanaNorm = normalizeText(keywordKana);
 
 			filteredRows = filteredRows.filter(row => {
-				const fieldName = (row[2] || '').toLowerCase(); // field_name
-				const jName = fieldName; // フィールド名もjNameとして扱う
-				const reading = (row[11] || '').toLowerCase();
+				const fieldName = (row[2] || '');
+				const jName = fieldName;
+				const reading = (row[11] || '');
 
-				// ひらがな・カタカナ・ローマ字・英字・英字カタカナ化・英字ひらがな化
-				const fieldNameHira = toHiragana(fieldName);
-				const fieldNameKana = toKatakana(fieldName);
-				const fieldNameRoma = toRomaji(toHiragana(fieldName));
-				const fieldNameAlphaKana = toKatakanaFromAlphabet(fieldName);
+				// すべて小文字化して比較
+				const fieldNameLower = fieldName.toLowerCase();
+				const jNameLower = jName.toLowerCase();
+				const readingLower = reading.toLowerCase();
+
+				const fieldNameHira = toHiragana(fieldNameLower);
+				const fieldNameKana = toKatakana(fieldNameLower);
+				const fieldNameRoma = toRomaji(toHiragana(fieldNameLower));
+				const fieldNameAlphaKana = toKatakanaFromAlphabet(fieldNameLower);
 				const fieldNameAlphaHira = toHiragana(fieldNameAlphaKana);
 				const fieldNameAlphaRoma = toRomaji(toHiragana(fieldNameAlphaKana));
 
-				const jNameHira = toHiragana(jName);
-				const jNameKana = toKatakana(jName);
-				const jNameRoma = toRomaji(toHiragana(jName));
-				const jNameAlphaKana = toKatakanaFromAlphabet(jName);
+				const jNameHira = toHiragana(jNameLower);
+				const jNameKana = toKatakana(jNameLower);
+				const jNameRoma = toRomaji(toHiragana(jNameLower));
+				const jNameAlphaKana = toKatakanaFromAlphabet(jNameLower);
 				const jNameAlphaHira = toHiragana(jNameAlphaKana);
 				const jNameAlphaRoma = toRomaji(toHiragana(jNameAlphaKana));
 
-				const readingHira = toHiragana(reading);
-				const readingKana = toKatakana(reading);
-				const readingRoma = toRomaji(toHiragana(reading));
-				const readingAlphaKana = toKatakanaFromAlphabet(reading);
+				const readingHira = toHiragana(readingLower);
+				const readingKana = toKatakana(readingLower);
+				const readingRoma = toRomaji(toHiragana(readingLower));
+				const readingAlphaKana = toKatakanaFromAlphabet(readingLower);
 				const readingAlphaHira = toHiragana(readingAlphaKana);
 				const readingAlphaRoma = toRomaji(toHiragana(readingAlphaKana));
 
-				let jNameConverted = jName;
+				let jNameConverted = jNameLower;
 				if (isKana) {
-					jNameConverted = toHiragana(jName);
+					jNameConverted = toHiragana(jNameLower);
 				} else if (isKatakana) {
-					jNameConverted = toKatakana(jName);
+					jNameConverted = toKatakana(jNameLower);
 				}
 
-				let readingConverted = reading;
+				let readingConverted = readingLower;
 				if (isKana) {
-					readingConverted = toHiragana(reading);
+					readingConverted = toHiragana(readingLower);
 				} else if (isKatakana) {
-					readingConverted = toKatakana(reading);
+					readingConverted = toKatakana(readingLower);
 				}
 
-				const readingNorm = normalizeText(reading);
+				const readingNorm = normalizeText(readingLower);
 				const readingHiraNorm = normalizeText(readingHira);
 				const readingKanaNorm = normalizeText(readingKana);
 
-				// field_name も全パターンで比較
 				return (
 					// フィールド名
-					fieldName.includes(keyword) ||
+					fieldNameLower.includes(keyword) ||
 					fieldNameHira.includes(keywordHira) ||
 					fieldNameKana.includes(keywordKana) ||
 					fieldNameRoma.includes(keywordRoma) ||
 					fieldNameAlphaKana.includes(keywordKana) ||
 					fieldNameAlphaHira.includes(keywordHira) ||
 					fieldNameAlphaRoma.includes(keywordRoma) ||
-					// jName（フィールド名と同じだが既存互換のため残す）
-					jName.includes(keyword) ||
+					// jName
+					jNameLower.includes(keyword) ||
 					jNameHira.includes(keywordHira) ||
 					jNameKana.includes(keywordKana) ||
 					jNameRoma.includes(keywordRoma) ||
@@ -328,7 +349,7 @@ function init() {
 					jNameConverted.includes(keywordHira) ||
 					jNameConverted.includes(keywordKana) ||
 					// Reading
-					reading.includes(keyword) ||
+					readingLower.includes(keyword) ||
 					readingHira.includes(keywordHira) ||
 					readingKana.includes(keywordKana) ||
 					readingRoma.includes(keywordRoma) ||
@@ -349,6 +370,10 @@ function init() {
 		updateMarkerVisibility(rows);
 	}
 	// --- ここまで追加 ---
+
+	function updateListIfNeeded() {
+    	console.log('update!');
+	}
 
 	// 検索ボックスのイベントリスナーを追加
 	const markerSearch = document.getElementById('marker-search');
