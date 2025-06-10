@@ -144,13 +144,13 @@ function init() {
 					if (infoPanel) {
 						let linksHtml = '';
 						if (SiteLink && String(SiteLink).trim() !== '') {
-							linksHtml += `<a href="${SiteLink}" target="_blank">サイトリンク</a><br>`;
+							linksHtml += `<a href="${SiteLink}" target="_blank">公式サイト</a><br>`;
 						}
 						if (BookLink && String(BookLink).trim() !== '') {
-							linksHtml += `<a href="${BookLink}" target="_blank">予約リンク</a><br>`;
+							linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
 						}
 						if (BusBookLink && String(BusBookLink).trim() !== '') {
-							linksHtml += `<a href="${BusBookLink}" target="_blank">バス予約リンク</a><br>`;
+							linksHtml += `<a href="${BusBookLink}" target="_blank">送迎バス予約はここから</a><br>`;
 						}
 						infoPanel.innerHTML = `
 							<h2>${field_name}</h2>
@@ -170,13 +170,13 @@ function init() {
 					document.body.classList.add('panel-open');
 					let linksHtml = '';
 					if (SiteLink && String(SiteLink).trim() !== '') {
-						linksHtml += `<a href="${SiteLink}" target="_blank">サイトリンク</a><br>`;
+						linksHtml += `<a href="${SiteLink}" target="_blank">公式サイト</a><br>`;
 					}
 					if (BookLink && String(BookLink).trim() !== '') {
-						linksHtml += `<a href="${BookLink}" target="_blank">予約リンク</a><br>`;
+						linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
 					}
 					if (BusBookLink && String(BusBookLink).trim() !== '') {
-						linksHtml += `<a href="${BusBookLink}" target="_blank">バス予約リンク</a><br>`;
+						linksHtml += `<a href="${BusBookLink}" target="_blank">送迎バス予約はここから</a><br>`;
 					}
 					leftPanel.innerHTML = `
 						<h2>${field_name}</h2>
