@@ -50,7 +50,7 @@ function init() {
 		map = new maplibregl.Map({
 			container: 'map',
 			style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-			center: [139.8567308145714, 35.7575124203246],
+			center: [139.98886293394258, 35.853556991089334],
 			zoom: 8.7,
 		});
 
@@ -91,7 +91,7 @@ function init() {
 							showMarkerList(allRows);
 							// 一覧に戻す時にズーム・中心座標を初期値に戻す
 							map.flyTo({
-								center: [139.8567308145714, 35.7575124203246],
+								center: [139.98886293394258, 35.853556991089334],
 								zoom: 8.7
 							});
 						});
