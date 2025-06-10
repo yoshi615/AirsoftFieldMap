@@ -1,4 +1,4 @@
-/* PC用レイアウト */
+/* PCレイアウト */
 @media (min-width: 768px) {
     body {
         margin: 0;
@@ -8,38 +8,27 @@
         overflow-y: hidden;
     }
     #left-panel {
-        width: 35% !important;
+        width: 35%;
         padding: 40px 10px;
-        overflow-x: hidden;
-        overflow-y: auto !important;
+        overflow-y: auto;
         border-right: 1px solid #ddd;
         height: 100vh;
-        position: relative;
-        background: white;
+        background: rgba(41,100,96,0.2);
         box-sizing: border-box;
         z-index: 2;
-        background-color: rgba(41,100,96,0.2);
-    }
-    #left-panel + #right-panel {
-        /* width: 100% !important; */
-        margin-left: 0; /* Reset margin */
     }
     #right-panel {
-        width: 65% !important;
+        width: 65%;
         height: 100vh;
         position: relative;
         z-index: 1;
-        /* overflow-y: hidden !important; */
     }
     #map {
         height: 100vh;
         width: 100%;
-        /* position: absolute; */
-        z-index: 1; /* Ensure map stays below panel and handle */
+        z-index: 1;
     }
-    #map-style {
-        display: none;
-    }
+    #map-style,
     #marker-filter-dropdown {
         display: none;
     }
@@ -47,23 +36,19 @@
         position: absolute;
         top: 50px;
         right: 10px;
-        transform: translateX(120%);
-        transition: transform 0.3s ease-in-out;
-        opacity: 0;
-        visibility: hidden;
-        padding: 10px;
-        background-color: white;
         opacity: 0.5;
         border-radius: 4px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        display: none;  /* Hide by default */
+        display: none;
+        background: #fff;
+        padding: 10px;
+        transition: transform 0.3s, opacity 0.3s;
     }
     #map-tools.visible {
-        transform: translateX(0);
         opacity: 1;
-        visibility: visible;
-        z-index: 9999;
         display: block;
+        z-index: 9999;
+        transform: none;
     }
     .map-control {
         display: block;
@@ -71,128 +56,95 @@
         padding: 8px;
         border: 1px solid #ddd;
         border-radius: 4px;
-        background: white;
+        background: #fff;
         font-size: 14px;
         width: 200px;
     }
-    button.map-control {
-        background-color: #296460; /* replaced #296460 */
-        color: white;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-    button.map-control:hover {
-        background-color: #163900; /* replaced #darkcodebase */
-    }
-    button {
-        background-color: #296460; /* replaced #296460 */
-        color: white;
-        padding: 10px 20px;
-        margin: 5px;
-        cursor: pointer;
+    button, button.map-control {
+        background: #296460;
+        color: #fff;
         border: none;
         border-radius: 4px;
-        transition: background-color 0.3s ease, transform 0.3s ease;
+        cursor: pointer;
+        padding: 10px 20px;
+        margin: 5px;
         font-size: 16px;
+        transition: background 0.3s, transform 0.3s;
     }
-    button:hover {
-        background-color: #163900; /* replaced #darkcodebase */
+    button:hover, button.map-control:hover {
+        background: #163900;
         transform: scale(1.05);
     }
-    .mySlides {
-        display: none;
-    }
-    .fade {
-        animation-name: fade;
-        animation-duration: 1.5s;
-    }
-    /* マーカー検索ボックスのスタイル */
     #marker-search {
         padding: 8px 12px;
         border: 1px solid #aaa;
         border-radius: 6px;
-        margin-bottom: 12px;
-        box-sizing: border-box;
-        outline: none;
-        transition: border 0.2s;
-        margin: 10px 0; 
-        width: 115px;
-        height:30px;
+        margin: 10px 0 12px 0;
+        width: 105px;
+        height: 30px;
         position: absolute;
         z-index: 9999;
-        right: 115px;
-        top:6px;
+        right: 5px;
+        top: 6px;
         font-size: 13px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        color: #fff !important;
+        background: #296460;
+        outline: none;
+        box-sizing: border-box;
     }
+    #marker-search:focus { border: 1.5px solid #ffffff00; }
+    #marker-search::placeholder { color: #fff; }
 }
 
-/* =========================
-
-
-    スマートフォン用レイアウト
-
-
-    ========================= */
+/* スマホレイアウト */
 @media (max-width: 767px) {
     body {
         margin: 0;
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        height: 100vh; /* Ensure body takes full viewport height */
+        height: 100vh;
     }
     #left-panel {
         width: 100%;
         height: 50vh;
         position: fixed;
         bottom: 0;
-        background: rgba(41, 100, 96, 0.2);
+        background: rgba(41,100,96,0.2);
         z-index: 2;
-        transition: transform 0.3s ease-in-out;
-        background-color: rgba(41, 100, 96, 0.2);
+        transition: transform 0.3s;
         overflow-y: auto;
-        transform: translateY(100%); /* Start hidden */
+        transform: translateY(100%);
         padding: 20px;
         box-sizing: border-box;
     }
     #left-panel:not(.closed) {
-        transform: translateY(0); /* Show panel when not closed */
-    }
-    #left-panel:not(.closed) + #right-panel {
-        height: 50vh;
-    }
-    #left-panel:not(.closed) + #right-panel #map {
-        height: 50vh;
+        transform: translateY(0);
     }
     #right-panel {
         width: 100%;
-        height: 100vh; /* Default to full height */
-        transition: height 0.3s ease-in-out;
+        height: 100vh;
+        transition: height 0.3s;
         position: relative;
-        flex-shrink: 0; /* Prevent panel from shrinking */
     }
     #map {
-        height: 100vh; /* Default to full height */
+        height: 50%;
         width: 100%;
-        transition: height 0.3s ease-in-out;
+        transition: height 0.3s;
     }
-    #map-style {
-        display: none;
-    }
+    #map-style,
     #marker-filter-dropdown {
         display: none;
     }
     #map-tools {
         position: absolute;
         top: 50px;
-        /* top: auto; */
         right: 10px;
         z-index: 9999;
+        background: #fff;
+        display: none;
         padding: 10px;
-        background-color: white;
-        display: none;  /* Hide by default */
     }
     #map-tools.visible {
         display: block;
@@ -203,261 +155,84 @@
         padding: 8px;
         border: 1px solid #ddd;
         border-radius: 4px;
-        background: white;
+        background: #fff;
         font-size: 12px;
         width: 150px;
     }
-    button.map-control {
-        background-color: #296460; /* replaced #296460 */
-        color: white;
-        border: none;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-    button.map-control:hover {
-        background-color: #163900; /* replaced #darkcodebase */
-    }
-    .mySlides img {
-        width: 100%;
-        height: auto;
-        object-fit: cover;
-    }
-    button {
-        background-color: #296460; /* replaced #296460 */
-        color: white;
-        padding: 10px 20px;
-        margin: 5px;
-        cursor: pointer;
+    button, button.map-control {
+        background: #296460;
+        color: #fff;
         border: none;
         border-radius: 4px;
-        transition: background-color 0.3s ease, transform 0.3s ease;
+        cursor: pointer;
+        padding: 10px 20px;
+        margin: 5px;
         font-size: 16px;
+        transition: background 0.3s, transform 0.3s;
     }
-    .mySlides {
-        display: none;
+    button:hover, button.map-control:hover {
+        background: #163900;
+        transform: scale(1.05);
     }
+    #marker-search {
+        padding: 8px 12px;
+        border: 1px solid #aaa;
+        border-radius: 6px;
+        margin: 10px 0 12px 0;
+        width: 105px;
+        max-width: 350px;
+        height: 30px;
+        position: absolute;
+        z-index: 9999;
+        left: 50%;
+        top: 6px;
+        transform: translateX(-50%);
+        font-size: 13px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        color: #fff !important;
+        background: #296460;
+        outline: none;
+        box-sizing: border-box;
+    }
+    #marker-search:focus { border: 1.5px solid #ffffff00; }
+    #marker-search::placeholder { color: #fff; }
 }
 
-/* Replace all switch styles with these new ones */
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 60px;  /* Increase width */
-    height: 28px; /* Increase height */
-    margin: 5px 0;
-}
-
-.switch input {
-    display: none;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .3s;
-    border: 1px solid #bbb;
-    box-sizing: border-box;
-    border-radius: 14px; /* Make slider rounded */
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 24px;
-    width: 24px;
-    left: 2px; /* Center the knob */
-    top: 2px;
-    background-color: white;
-    transition: .3s;
-    border: 1px solid #bbb;
-    box-sizing: border-box;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-input:checked + .slider {
-    background-color: #296460; /* replaced #296460 */
-    border-color: #1a3f00; /* replaced #darkcodebase */
-}
-
-input:checked + .slider:before {
-    transform: translateX(20px);
-    border-color: #1a3f00; /* replaced #darkcodebase */
-}
-
-.switch-label {
-    position: absolute;
-    left: 26px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #666;
-    font-size: 10px;
-    white-space: nowrap;
-    user-select: none;
-    font-weight: bold;
-}
-
-/* Add new control group styles */
-.control-group {
-    margin-bottom: 10px;
-}
-
-.control-label {
-    display: block;
-    margin-bottom: 4px;
-    color: #333;
-    font-size: 14px;
-    font-weight: bold
-}
-
-/* Add new checkbox group styles */
-.checkbox-group {
-    background: white;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
-    cursor: pointer;
-    user-select: none;
-}
-
-.checkbox-label input[type="checkbox"] {
-    /* Custom checkbox styling */
-    appearance: none;
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    cursor: pointer;
-    position: relative;
-    transition: background-color 0.3s;
-}
-
-.checkbox-label input[type="checkbox"]:checked {
-    background-color: #296460; /* replaced #296460 */
-    border-color: #1a3f00; /* replaced #darkcodebase */
-}
-
-.checkbox-label input[type="checkbox"]:checked::after {
-    content: "✓";
-    position: absolute;
-    color: white;
-    font-size: 14px;
-    left: 3px;
-    top: 0px;
-}
-
-.checkbox-text {
-    font-size: 14px;
-    color: #333;
-}
-
-/* Add new control header styles */
-.control-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-}
-
-.control-actions {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    font-size: 12px;
-}
-
-.control-link {
-    color: #296460; /* replaced #296460 */
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.control-link:hover {
-    color: #163900; /* replaced #darkcodebase */
-    text-decoration: underline;
-}
-
-.control-separator {
-    color: #ddd;
-}
-
-.tools-toggle {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 10000;
-    background: #296460; /* replaced #296460 */
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 10px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: background-color 0.3s;
-}
-
-.tools-toggle:hover {
-    background-color: #163900; /* replaced #darkcodebase */
-}
-
-.control-row {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    margin-top: 10px;
-}
-#marker-search {
-    color: rgb(255, 255, 255) !important;
-    background: #296460;
-}
-#marker-search:focus {
-    border: 1.5px solid #ffffff00;
-}
-#marker-search::placeholder {
-    color:#ffffff;
-}
-
-/* カスタムマーカー画像のスタイル */
+/* 共通部品 */
 .custom-marker {
     width: 36px;
     height: 36px;
     object-fit: contain;
     display: block;
     pointer-events: auto;
-    /* 必要に応じて下に余白を追加 */
-    /* margin-bottom: 10px; */
-    transform: translateY(8px); /* 下端が座標に来るよう調整 */
+    transform: translateY(8px);
 }
-
 .marker-list {
-	padding-left: 0;
-	list-style: none;
-	text-align: center;
-	margin: 0;
+    padding-left: 0;
+    list-style: none;
+    text-align: center;
+    margin: 0;
 }
-.marker-list li {
-	margin: 8px 0;
-}
+.marker-list li { margin: 8px 0; }
 .marker-list-btn {
-	background: none;
-	border: none;
-	color: #007bff;
-	cursor: pointer;
-	text-decoration: underline;
-	font-size: 1em;
-	padding: 0;
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 1em;
+    padding: 0;
+}
+.back-to-list-btn {
+    position: relative;
+    top: -18px;
+    left: -10px;
+    margin-bottom: 10px;
+    padding: 6px 16px;
+    font-size: 1em;
+    border: 1px solid #888;
+    border-radius: 4px;
+    background: #296460;
+    cursor: pointer;
+    color: #fff;
 }
