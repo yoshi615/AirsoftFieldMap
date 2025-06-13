@@ -2,15 +2,15 @@
 // FieldList.csvの読み込み                       //
 // -------------------------------------------- //
 
-const csvFileName = 'FieldList.csv';
+const csvFileNames = ['FieldList.csv', 'NearestStation.csv'];
 let data = {};
 
-async function fetchCSV() {
-	console.log('Fetching CSV:', csvFileName);
+async function fetchCSV(fileName) {
+	console.log('Fetching CSV:', fileName);
 	try {
-		const response = await fetch(csvFileName);
+		const response = await fetch(fileName);
 		if (!response.ok) {
-			throw new Error('Failed to fetch CSV');
+			throw new Error('Failed to fetch CSV: ' + fileName);
 		}
 		const text = await response.text();
 		const rows = text.trim().split('\n').map(row => row.split(','));
@@ -24,20 +24,34 @@ async function fetchCSV() {
 }
 
 async function checkAndInit() {
-	const result = await fetchCSV();
+	const [fieldList, nearestStation] = await Promise.all([
+		fetchCSV('FieldList.csv'),
+		fetchCSV('NearestStation.csv')
+	]);
 
-	if (result !== null) {
-		data['FieldList'] = result;
-		console.log('Data object:', data);
+	let success = true;
+	if (fieldList !== null) {
+		data['FieldList'] = fieldList;
+	} else {
+		console.log('Failed to fetch data from FieldList.csv.');
+		success = false;
+	}
+	if (nearestStation !== null) {
+		data['NearestStation'] = nearestStation;
+	} else {
+		console.log('Failed to fetch data from NearestStation.csv.');
+		success = false;
+	}
 
-		// Wait for both DOM and data to be ready
+	console.log('Data object:', data);
+
+	// Wait for both DOM and data to be ready
+	if (success) {
 		if (document.readyState === 'loading') {
 			document.addEventListener('DOMContentLoaded', init);
 		} else {
 			init();
 		}
-	} else {
-		console.log('Failed to fetch data from FieldList.csv.');
 	}
 }
 

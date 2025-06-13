@@ -32,6 +32,7 @@ function init() {
 	let markers = [], markerDataList = [];
 	let rows = data.FieldList, allRows = data.FieldList;
 	let currentKeyword = '';
+	let lastActiveMarkerIndex = null;
 
 	initMap();
 
@@ -54,6 +55,51 @@ function init() {
 			zoom: 8.7,
 		});
 
+		// --- NearestStation.csvのマーカー追加（map生成後に追加） ---
+		map.on('load', function() {
+			if (data.NearestStation && Array.isArray(data.NearestStation)) {
+				data.NearestStation.forEach(row => {
+					// 4列未満や緯度経度が空の場合はスキップ
+					if (!row[3] || !row[4]) return;
+					const latNum = parseFloat(row[3]);
+					const lonNum = parseFloat((row[4] || '').replace(/\r?\n/g, '').trim());
+					if (isNaN(latNum) || isNaN(lonNum)) return;
+					const nearestStationName = row[2] || '';
+
+					const markerDiv = document.createElement('div');
+					markerDiv.className = 'nearest-station-marker';
+					markerDiv.title = '';
+
+					// ポップアップ要素を作成
+					const popupDiv = document.createElement('div');
+					popupDiv.className = 'nearest-station-popup';
+					popupDiv.textContent = nearestStationName;
+					popupDiv.style.display = 'none';
+					popupDiv.style.position = 'absolute';
+					popupDiv.style.left = '50%';
+					popupDiv.style.transform = 'translate(-50%, -100%)';
+					popupDiv.style.whiteSpace = 'nowrap';
+					popupDiv.style.pointerEvents = 'none';
+					markerDiv.appendChild(popupDiv);
+
+					// クリックで表示/非表示
+					markerDiv.addEventListener('click', function(e) {
+						e.stopPropagation();
+						popupDiv.style.display = (popupDiv.style.display === 'block') ? 'none' : 'block';
+					});
+					// 地図クリックで非表示
+					map.on('click', function() {
+						popupDiv.style.display = 'none';
+					});
+
+					new maplibregl.Marker({ element: markerDiv, anchor: 'center' })
+						.setLngLat([lonNum, latNum])
+						.addTo(map);
+				});
+			}
+		});
+		console.log('NearestStation markers to add:', data.NearestStation);
+
 		allRows.forEach((row, index) => {
 			const [id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation] = row;
 			const latNum = parseFloat(lat), lonNum = parseFloat(lon);
@@ -61,7 +107,7 @@ function init() {
 				markers.push(null); markerDataList.push(null); return;
 			}
 			const customMarker = document.createElement('img');
-			customMarker.src = 'images/pin.png';
+			customMarker.src = 'images/pin_blue.png';
 			customMarker.className = 'custom-marker';
 			customMarker.title = field_name;
 			const marker = new maplibregl.Marker({ element: customMarker, anchor: 'bottom' })
@@ -73,6 +119,16 @@ function init() {
 			marker.getElement().addEventListener('click', (event) => {
 				event.stopPropagation();
 				const infoPanel = document.getElementById('info');
+				// 画像リセット
+				if (lastActiveMarkerIndex !== null && markers[lastActiveMarkerIndex]) {
+					const prevImg = markers[lastActiveMarkerIndex].getElement();
+					if (prevImg && prevImg.tagName === 'IMG') prevImg.src = 'images/pin_blue.png';
+				}
+				// 現在のマーカー画像をmagentaに
+				const thisImg = marker.getElement();
+				if (thisImg && thisImg.tagName === 'IMG') thisImg.src = 'images/pin_magenta.png';
+				lastActiveMarkerIndex = index;
+
 				if (lastClickedMarker === marker) {
 					if (infoPanel) infoPanel.innerHTML = '';
 					lastClickedMarker = null;
@@ -88,8 +144,13 @@ function init() {
 					const backBtn = document.getElementById('back-to-list-btn');
 					if (backBtn) {
 						backBtn.addEventListener('click', function() {
+							// 一覧に戻る時にマーカー画像を元に戻す
+							if (lastActiveMarkerIndex !== null && markers[lastActiveMarkerIndex]) {
+								const prevImg = markers[lastActiveMarkerIndex].getElement();
+								if (prevImg && prevImg.tagName === 'IMG') prevImg.src = 'images/pin_blue.png';
+								lastActiveMarkerIndex = null;
+							}
 							showMarkerList(allRows);
-							// 一覧に戻す時にズーム・中心座標を初期値に戻す
 							map.flyTo({
 								center: [139.98886293394258, 35.853556991089334],
 								zoom: 8.7
@@ -133,8 +194,14 @@ function init() {
 	function showMarkerList(rowsToShow) {
 		const leftPanel = document.getElementById('left-panel');
 		if (!leftPanel) return;
+		// 50音順に並べ替え（濁点・半濁点・小文字も正規化して比較）
+		const sortedRows = [...rowsToShow].sort((a, b) => {
+			const hiraA = toHiragana((a[10] || a[2] || '').toString().normalize('NFKC'));
+			const hiraB = toHiragana((b[10] || b[2] || '').toString().normalize('NFKC'));
+			return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
+		});
 		let html = '<ul class="marker-list">';
-		rowsToShow.forEach( row => {
+		sortedRows.forEach( row => {
 			const [id, , field_name] = row;
 			if (!field_name || String(field_name).trim() === '') return;
 			html += `<li><button class="marker-list-btn" data-marker-id="${id}">${field_name}</button></li>`;
@@ -146,6 +213,16 @@ function init() {
 				const markerId = this.getAttribute('data-marker-id');
 				const idx = allRows.findIndex(row => row[0] == markerId);
 				if (markers[idx] && markers[idx].getElement()) {
+					// 画像リセット
+					if (lastActiveMarkerIndex !== null && markers[lastActiveMarkerIndex]) {
+						const prevImg = markers[lastActiveMarkerIndex].getElement();
+						if (prevImg && prevImg.tagName === 'IMG') prevImg.src = 'images/pin_blue.png';
+					}
+					// 現在のマーカー画像をmagentaに
+					const thisImg = markers[idx].getElement();
+					if (thisImg && thisImg.tagName === 'IMG') thisImg.src = 'images/pin_magenta.png';
+					lastActiveMarkerIndex = idx;
+
 					markers[idx].getElement().dispatchEvent(new Event('click', {bubbles: true}));
 				}
 			});
