@@ -101,7 +101,7 @@ function init() {
 		console.log('NearestStation markers to add:', data.NearestStation);
 
 		allRows.forEach((row, index) => {
-			const [id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation] = row;
+			const [id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation,OtherInfo,lunch] = row;
 			const latNum = parseFloat(lat), lonNum = parseFloat(lon);
 			if (!lat || !lon || isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
 				markers.push(null); markerDataList.push(null); return;
@@ -133,14 +133,14 @@ function init() {
 					if (infoPanel) infoPanel.innerHTML = '';
 					lastClickedMarker = null;
 				} else {
-					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge);
+					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch);
 					lastClickedMarker = marker;
 				}
 				const leftPanel = document.getElementById('left-panel');
 				if (leftPanel) {
 					leftPanel.classList.remove('closed');
 					document.body.classList.add('panel-open');
-					leftPanel.innerHTML = markerInfoHtml(field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge);
+					leftPanel.innerHTML = markerInfoHtml(field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch);
 					const backBtn = document.getElementById('back-to-list-btn');
 					if (backBtn) {
 						backBtn.addEventListener('click', function() {
@@ -166,11 +166,13 @@ function init() {
 		showMarkerList(allRows);
 	}
 
-	function markerInfoHtml(field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge) {
+	function markerInfoHtml(field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch) {
 		let linksHtml = '';
 		if (SiteLink && String(SiteLink).trim() !== '') linksHtml += `<a href="${SiteLink}" target="_blank">公式サイト</a><br>`;
 		if (BookLink && String(BookLink).trim() !== '') linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
 		if (BusBookLink && String(BusBookLink).trim() !== '') linksHtml += `<a href="${BusBookLink}" target="_blank">送迎バス予約はここから</a><br>`;
+		if (OtherInfo && String(OtherInfo).trim() !== '') linksHtml += `<p>${OtherInfo}</p><br>`;
+		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>${lunch}</p><br>`;
 		// 「一覧に戻る」ボタンを先頭に追加
 		return `
 			<button id="back-to-list-btn" class="back-to-list-btn">一覧に戻る</button>
