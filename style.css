@@ -112,7 +112,7 @@
         height: 50vh;
         position: fixed;
         bottom: 0;
-        background: rgba(41,100,96,0.2);
+        background: rgba(88, 88, 88, 0.2);
         z-index: 2;
         transition: transform 0.3s;
         overflow-y: auto;
