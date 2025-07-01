@@ -33,6 +33,7 @@ function init() {
 	let rows = data.FieldList, allRows = data.FieldList;
 	let currentKeyword = '';
 	let lastActiveMarkerIndex = null;
+	let currentLocationMarker = null; // 現在地マーカーを保持する変数
 
 	initMap();
 
@@ -55,8 +56,56 @@ function init() {
 			zoom: 8.7,
 		});
 
-		// --- NearestStation.csvのマーカー追加（map生成後に追加） ---
+		// 現在地を取得して表示する関数
+		function showCurrentLocation() {
+			if (!navigator.geolocation) {
+				console.log('このブラウザは位置情報サービスをサポートしていません。');
+				return;
+			}
+
+			navigator.geolocation.getCurrentPosition(
+				function(position) {
+					const lat = position.coords.latitude;
+					const lon = position.coords.longitude;
+					
+					// 既存の現在地マーカーがあれば削除
+					if (currentLocationMarker) {
+						currentLocationMarker.remove();
+					}
+
+					// 現在地マーカーを作成
+					const currentLocationImg = document.createElement('img');
+					currentLocationImg.src = 'images/cp_blue2.png';
+					currentLocationImg.className = 'current-location-marker';
+					currentLocationImg.style.cursor = 'pointer';
+					currentLocationImg.title = '現在地';
+
+					// 現在地マーカーを地図に追加
+					currentLocationMarker = new maplibregl.Marker({ 
+						element: currentLocationImg, 
+						anchor: 'center' 
+					})
+						.setLngLat([lon, lat])
+						.addTo(map);
+
+					console.log('現在地を表示しました:', lat, lon);
+				},
+				function(error) {
+					console.log('位置情報の取得に失敗しました:', error.message);
+				},
+				{
+					enableHighAccuracy: true,
+					timeout: 10000,
+					maximumAge: 300000
+				}
+			);
+		}
+
+		// マップ読み込み完了時に現在地を自動取得
 		map.on('load', function() {
+			showCurrentLocation();
+			
+			// --- NearestStation.csvのマーカー追加 ---
 			if (data.NearestStation && Array.isArray(data.NearestStation)) {
 				data.NearestStation.forEach(row => {
 					// 4列未満や緯度経度が空の場合はスキップ
@@ -172,7 +221,7 @@ function init() {
 		if (BookLink && String(BookLink).trim() !== '') linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
 		if (BusBookLink && String(BusBookLink).trim() !== '') linksHtml += `<a href="${BusBookLink}" target="_blank">送迎バス予約はここから</a><br>`;
 		if (OtherInfo && String(OtherInfo).trim() !== '') linksHtml += `<p>${OtherInfo}</p><br>`;
-		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>${lunch}</p><br>`;
+		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食代は別途${lunch}円</p><br>`;
 		// 「一覧に戻る」ボタンを先頭に追加
 		return `
 			<button id="back-to-list-btn" class="back-to-list-btn">一覧に戻る</button>

@@ -256,3 +256,12 @@
 	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 	z-index: 10;
 }
+
+/* 現在地マーカーのスタイル */
+.current-location-marker {
+	width: 45px;
+	height: 45px;
+	object-fit: contain;
+	display: block;
+	pointer-events: auto;
+}
