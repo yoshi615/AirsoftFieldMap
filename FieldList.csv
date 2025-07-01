@@ -1,7 +1,7 @@
 id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation,OtherInfo,lunch
-1,2,つくばサバゲーランド,3700,????,35.95951922179579,140.1973409568622,https://tsukusaba.com/,https://coubic.com/tsukusaba/558964#pageContent,https://coubic.com/tsukusaba/2116445#pageContent,つくばさばげーらんど,常磐線 竜ヶ崎市駅,貸し切りはフィールドに相談,
-2,2,C.A.T.facility,3000,45000,35.93433392473249,140.21648044436543,https://www.catfacility.com/,https://www.catfacility.com/book-online,https://coubic.com/1sabakan/4876191#pageContent,きゃっとふぁしりてぃ,常磐線 竜ヶ崎市駅,,
-3,2,サバイバルカントリー,3300,(30人までは)99000,35.935471324591035,140.2156312392577,https://survival-country.jp/access/,https://coubic.com/1sabakan/booking_pages#pageContent,https://coubic.com/1sabakan/4876191#pageContent,さばいばるかんとりー,常磐線 竜ヶ崎市駅,,
+2,2,つくばサバゲーランド,3700,????,35.95951922179579,140.1973409568622,https://tsukusaba.com/,https://coubic.com/tsukusaba/558964#pageContent,https://coubic.com/tsukusaba/2116445#pageContent,つくばさばげーらんど,常磐線 竜ヶ崎市駅,貸し切りはフィールドに相談,
+3,2,C.A.T.facility,3000,45000,35.93433392473249,140.21648044436543,https://www.catfacility.com/,https://www.catfacility.com/book-online,https://coubic.com/1sabakan/4876191#pageContent,きゃっとふぁしりてぃ,常磐線 竜ヶ崎市駅,,
+4,2,サバイバルカントリー,3300,(30人までは)99000,35.935471324591035,140.2156312392577,https://survival-country.jp/access/,https://coubic.com/1sabakan/booking_pages#pageContent,https://coubic.com/1sabakan/4876191#pageContent,さばいばるかんとりー,常磐線 竜ヶ崎市駅,,
 5,1,大将軍,3500,(10人までは)30000,35.92062588241885,139.9417573627606,https://www.daisyougun.com/,,https://www.daisyougun.com/%E7%84%A1%E6%96%99%E9%80%81%E8%BF%8E%E4%BA%88%E7%B4%84/,だいしょうぐん,TX 柏たなか駅,,
 6,1,東京サバゲーパーク,(ドリンクバー)4000,????,35.7904872248783,140.15006194789763,https://www.tokyosabagepark.jp/,https://www.tokyosabagepark.jp/reservation.php,https://www.tokyosabagepark.jp/transfer.php,とうきょうさばげーぱーく,北総線 印西牧の原駅,貸し切りはフィールドに相談
 7,1,U-box,3300,(10人までは)33000,35.76098266159436,140.250029460453,https://u-box.space/,https://u-box.space/reservation,https://u-box.space/bus,ゆーぼっくす,京成本線 京成酒々井駅,,
