@@ -41,7 +41,8 @@ function init() {
 		let latSum = 0, lonSum = 0, validPoints = 0;
 		let bounds = new maplibregl.LngLatBounds();
 
-		rows.forEach(row => {
+		// allRowsを使用して全データから座標を取得
+		allRows.forEach(row => {
 			const [, , , , lat, lon] = row;
 			const latNum = parseFloat(lat), lonNum = parseFloat(lon);
 			if (lat && lon && !isNaN(latNum) && !isNaN(lonNum) && latNum >= -90 && latNum <= 90 && lonNum >= -180 && lonNum <= 180) {
@@ -49,11 +50,20 @@ function init() {
 			}
 		});
 
+		// 座標データの平均値をcenter座標として設定
+		let center = [139.98886293394258, 35.853556991089334]; // フォールバック座標
+		let zoom = 8.7;
+
+		// 有効なポイントがある場合は平均値を計算
+		if (validPoints > 0) {
+			center = [lonSum / validPoints, latSum / validPoints];
+		}
+
 		map = new maplibregl.Map({
 			container: 'map',
 			style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-			center: [139.98886293394258, 35.853556991089334],
-			zoom: 8.7,
+			center: center,
+			zoom: zoom,
 		});
 
 		// 現在地を取得して表示する関数
@@ -103,6 +113,14 @@ function init() {
 
 		// マップ読み込み完了時に現在地を自動取得
 		map.on('load', function() {
+			// 有効な境界がある場合は地図をその範囲にフィット
+			if (validPoints > 0 && !bounds.isEmpty()) {
+				map.fitBounds(bounds, {
+					padding: { top: 50, bottom: 50, left: 50, right: 50 },
+					maxZoom: 15
+				});
+			}
+
 			showCurrentLocation();
 			
 			// --- NearestStation.csvのマーカー追加 ---
@@ -202,7 +220,7 @@ function init() {
 							showMarkerList(allRows);
 							map.flyTo({
 								center: [139.98886293394258, 35.853556991089334],
-								zoom: 8.7
+								zoom: 10
 							});
 						});
 					}
