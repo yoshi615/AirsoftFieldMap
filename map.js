@@ -34,6 +34,8 @@ function init() {
 	let currentKeyword = '';
 	let lastActiveMarkerIndex = null;
 	let currentLocationMarker = null; // 現在地マーカーを保持する変数
+	let currentLocationPrefecture = null; // 現在地の都道府県を保持
+	let expandedPrefectures = new Set(); // 展開中の都道府県を管理
 
 	initMap();
 
@@ -66,6 +68,26 @@ function init() {
 			zoom: zoom,
 		});
 
+		// 現在地から都道府県を判定する関数
+		function getCurrentLocationPrefecture(lat, lon) {
+			// 簡易的な座標による都道府県判定
+			// 東京: 35.6762°N, 139.6503°E 周辺
+			// 千葉: 35.6074°N, 140.1065°E 周辺  
+			// 茨城: 36.3418°N, 140.4468°E 周辺
+			// 埼玉: 35.8617°N, 139.6455°E 周辺
+			
+			if (lat >= 35.5 && lat <= 35.8 && lon >= 139.3 && lon <= 139.9) {
+				return '東京';
+			} else if (lat >= 35.2 && lat <= 36.1 && lon >= 139.8 && lon <= 140.9) {
+				return '千葉';
+			} else if (lat >= 35.7 && lat <= 36.9 && lon >= 140.0 && lon <= 140.9) {
+				return '茨城';
+			} else if (lat >= 35.6 && lat <= 36.3 && lon >= 139.0 && lon <= 139.9) {
+				return '埼玉';
+			}
+			return null;
+		}
+
 		// 現在地を取得して表示する関数
 		function showCurrentLocation() {
 			if (!navigator.geolocation) {
@@ -77,6 +99,9 @@ function init() {
 				function(position) {
 					const lat = position.coords.latitude;
 					const lon = position.coords.longitude;
+					
+					// 現在地の都道府県を判定
+					currentLocationPrefecture = getCurrentLocationPrefecture(lat, lon);
 					
 					// 既存の現在地マーカーがあれば削除
 					if (currentLocationMarker) {
@@ -98,10 +123,14 @@ function init() {
 						.setLngLat([lon, lat])
 						.addTo(map);
 
-					console.log('現在地を表示しました:', lat, lon);
+					console.log('現在地を表示しました:', lat, lon, '都道府県:', currentLocationPrefecture);
+					
+					// 現在地取得後にマーカーリストを再表示
+					showMarkerList(allRows);
 				},
 				function(error) {
 					console.log('位置情報の取得に失敗しました:', error.message);
+					showMarkerList(allRows); // 位置情報取得失敗時も通常表示
 				},
 				{
 					enableHighAccuracy: true,
@@ -230,7 +259,6 @@ function init() {
 				if (window.innerWidth <= 767) setTimeout(() => map.resize(), 300);
 			});
 		});
-		showMarkerList(allRows);
 	}
 
 	function markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch) {
@@ -264,23 +292,132 @@ function init() {
 		});
 	}
 
+	// 都道府県を抽出する関数を追加
+	function extractPrefecture(fieldName, nearestStation, category) {
+		// categoryの数字から都道府県を判定（READMEの仕様に基づく）
+		const prefectureMap = {
+			'0': '東京',
+			'1': '千葉', 
+			'2': '茨城',
+			'3': '埼玉'
+		};
+		
+		// categoryから都道府県を判定
+		if (category !== undefined && category !== null) {
+			const categoryStr = String(category).trim();
+			const prefecture = prefectureMap[categoryStr];
+			if (prefecture) {
+				return prefecture;
+			}
+		}
+		
+		// categoryから判定できない場合は'その他'として扱う
+		return 'その他';
+	}
+
+	// トグル状態に基づいてマーカーの表示/非表示を更新する関数
+	function updateMarkerVisibilityByToggle() {
+		markers.forEach((marker, idx) => {
+			if (!marker) return;
+			const row = markerDataList[idx];
+			if (!row) return;
+
+			const [, category, field_name, , , , , , , , , nearestStation] = row;
+			const prefecture = extractPrefecture(field_name, nearestStation, category);
+			
+			// 展開されている都道府県のマーカーのみ表示
+			const isVisible = expandedPrefectures.has(prefecture);
+			marker.getElement().style.display = isVisible ? '' : 'none';
+		});
+	}
+
 	function showMarkerList(rowsToShow) {
 		const leftPanel = document.getElementById('left-panel');
 		if (!leftPanel) return;
-		// 50音順に並べ替え（濁点・半濁点・小文字も正規化して比較）
+		
+		// 50音順に並べ替え
 		const sortedRows = [...rowsToShow].sort((a, b) => {
 			const hiraA = toHiragana((a[10] || a[2] || '').toString().normalize('NFKC'));
 			const hiraB = toHiragana((b[10] || b[2] || '').toString().normalize('NFKC'));
 			return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
 		});
-		let html = '<ul class="marker-list">';
-		sortedRows.forEach( row => {
-			const [id, , field_name] = row;
+		
+		// 都道府県別にグループ化
+		const prefectureGroups = {};
+		sortedRows.forEach(row => {
+			const [id, category, field_name, , , , , , , , , nearestStation] = row;
 			if (!field_name || String(field_name).trim() === '') return;
-			html += `<li><button class="marker-list-btn" data-marker-id="${id}">${field_name}</button></li>`;
+			
+			const prefecture = extractPrefecture(field_name, nearestStation, category);
+			if (!prefectureGroups[prefecture]) {
+				prefectureGroups[prefecture] = [];
+			}
+			prefectureGroups[prefecture].push(row);
 		});
-		html += '</ul>';
+		
+		// 都道府県順に並べ替え（categoryで定義された都道府県のみ）
+		const prefectureOrder = [
+			'東京', '千葉', '茨城', '埼玉', 'その他'
+		];
+		
+		let html = '<div class="prefecture-list">';
+		
+		prefectureOrder.forEach(prefecture => {
+			if (!prefectureGroups[prefecture]) return;
+			
+			const fieldsCount = prefectureGroups[prefecture].length;
+			
+			// 現在地の都道府県の場合は展開、その他は畳む
+			const isCurrentLocation = prefecture === currentLocationPrefecture;
+			const displayStyle = isCurrentLocation ? 'block' : 'none';
+			const iconText = isCurrentLocation ? '▼' : '▶';
+			
+			html += `
+				<div class="prefecture-group">
+					<button class="prefecture-toggle" data-prefecture="${prefecture}">
+						<span class="toggle-icon">${iconText}</span>
+						${prefecture} (${fieldsCount})
+					</button>
+					<ul class="marker-list prefecture-fields" data-prefecture="${prefecture}" style="display: ${displayStyle};">
+			`;
+			
+			prefectureGroups[prefecture].forEach(row => {
+				const [id, , field_name] = row;
+				html += `<li><button class="marker-list-btn" data-marker-id="${id}">${field_name}</button></li>`;
+			});
+			
+			html += `
+					</ul>
+				</div>
+			`;
+		});
+		
+		html += '</div>';
 		leftPanel.innerHTML = html;
+		
+		// トグルボタンのイベントリスナー
+		leftPanel.querySelectorAll('.prefecture-toggle').forEach(toggleBtn => {
+			toggleBtn.addEventListener('click', function() {
+				const prefecture = this.getAttribute('data-prefecture');
+				const fieldsList = leftPanel.querySelector(`.prefecture-fields[data-prefecture="${prefecture}"]`);
+				const toggleIcon = this.querySelector('.toggle-icon');
+				
+				if (fieldsList.style.display === 'none') {
+					fieldsList.style.display = 'block';
+					toggleIcon.textContent = '▼';
+					expandedPrefectures.add(prefecture);
+				} else {
+					fieldsList.style.display = 'none';
+					toggleIcon.textContent = '▶';
+					expandedPrefectures.delete(prefecture);
+				}
+				
+				// トグル状態変更時にマーカーの表示を更新
+				updateMarkerVisibilityByToggle();
+			});
+		});
+		
+		// マーカーリストボタンのイベントリスナー
 		leftPanel.querySelectorAll('button[data-marker-id]').forEach(btn => {
 			btn.addEventListener('click', function() {
 				const markerId = this.getAttribute('data-marker-id');
@@ -300,6 +437,15 @@ function init() {
 				}
 			});
 		});
+		
+		// 初期状態の展開都道府県を設定
+		expandedPrefectures.clear();
+		if (currentLocationPrefecture) {
+			expandedPrefectures.add(currentLocationPrefecture);
+		}
+		
+		// 初期状態でマーカーの表示を更新
+		updateMarkerVisibilityByToggle();
 	}
 
 	function applyFilters() {
@@ -367,7 +513,24 @@ function init() {
 			});
 		}
 		rows = filteredRows;
-		updateMarkerVisibility(rows);
+		
+		// フィルタ適用時もトグル状態を考慮
+		const filteredIds = new Set(filteredRows.map(row => row[0]));
+		markers.forEach((marker, idx) => {
+			if (!marker) return;
+			const row = markerDataList[idx];
+			if (!row) return;
+
+			const [, category, field_name, , , , , , , , , nearestStation] = row;
+			const prefecture = extractPrefecture(field_name, nearestStation, category);
+			
+			// フィルタ条件とトグル状態の両方を満たす場合のみ表示
+			const matchesFilter = filteredIds.has(row[0]);
+			const isToggleExpanded = expandedPrefectures.has(prefecture);
+			const isVisible = matchesFilter && isToggleExpanded;
+			
+			marker.getElement().style.display = isVisible ? '' : 'none';
+		});
 	}
 
 	const markerSearch = document.getElementById('marker-search');
