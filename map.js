@@ -392,7 +392,7 @@ function init() {
 			}
 			
 			const displayStyle = isExpanded ? 'block' : 'none';
-			const iconText = isExpanded ? '▼' : '▶';
+			const iconText = isExpanded ? '-' : '+';
 			
 			html += `
 				<div class="prefecture-group">
@@ -426,11 +426,11 @@ function init() {
 				
 				if (fieldsList.style.display === 'none') {
 					fieldsList.style.display = 'block';
-					toggleIcon.textContent = '▼';
+					toggleIcon.textContent = '-';
 					expandedPrefectures.add(prefecture);
 				} else {
 					fieldsList.style.display = 'none';
-					toggleIcon.textContent = '▶';
+					toggleIcon.textContent = '+';
 					expandedPrefectures.delete(prefecture);
 				}
 				
