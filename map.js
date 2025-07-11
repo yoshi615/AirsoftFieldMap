@@ -197,7 +197,7 @@ function init() {
 		console.log('NearestStation markers to add:', data.NearestStation);
 
 		allRows.forEach((row, index) => {
-			const [id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation,OtherInfo,lunch] = row;
+			const [id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation,OtherInfo,lunch,num] = row;
 			const latNum = parseFloat(lat), lonNum = parseFloat(lon);
 			if (!lat || !lon || isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
 				markers.push(null); markerDataList.push(null); return;
@@ -229,14 +229,14 @@ function init() {
 					if (infoPanel) infoPanel.innerHTML = '';
 					lastClickedMarker = null;
 				} else {
-					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch);
+					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num);
 					lastClickedMarker = marker;
 				}
 				const leftPanel = document.getElementById('left-panel');
 				if (leftPanel) {
 					leftPanel.classList.remove('closed');
 					document.body.classList.add('panel-open');
-					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch);
+					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num);
 					const backBtn = document.getElementById('back-to-list-btn');
 					if (backBtn) {
 						backBtn.addEventListener('click', function() {
@@ -261,13 +261,23 @@ function init() {
 		});
 	}
 
-	function markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch) {
+	function markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num) {
 		let linksHtml = '';
 		if (SiteLink && String(SiteLink).trim() !== '') linksHtml += `<a href="${SiteLink}" target="_blank">公式サイト</a><br>`;
 		if (BookLink && String(BookLink).trim() !== '') linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
 		if (BusBookLink && String(BusBookLink).trim() !== '') linksHtml += `<a href="${BusBookLink}" target="_blank">送迎バス予約はここから</a><br>`;
 		if (OtherInfo && String(OtherInfo).trim() !== '') linksHtml += `<p>${OtherInfo}</p><br>`;
 		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食代は別途${lunch}円</p><br>`;
+		
+		// 画像のHTMLを条件付きで追加
+		let imageHtml = '';
+		if (num && String(num).trim() !== '') {
+			imageHtml = `<img src="images/${id}-1.jpg" 
+				alt="Airsoft field named ${field_name} showing main play area and surroundings. The environment includes outdoor terrain and field structures. Any visible signage reads ${field_name}. The atmosphere is energetic and inviting." 
+				class="field-photos" 
+				onerror="this.style.display='none'; console.log('Image not found: ${id}-1.jpg');" />`;
+		}
+		
 		// 「一覧に戻る」ボタンを先頭に追加
 		return `
 			<button id="back-to-list-btn" class="back-to-list-btn">一覧に戻る</button>
@@ -276,10 +286,7 @@ function init() {
 			<p>最寄り駅: ${NearestStation}</p>
 			<p>定期会料金: ${RegularMeetingCharge}円</p>
 			<p>貸し切り料金: ${CharterCharge}円</p>
-			<img src="images/${id}-1.jpg" 
-				alt="Airsoft field named ${field_name} showing main play area and surroundings. The environment includes outdoor terrain and field structures. Any visible signage reads ${field_name}. The atmosphere is energetic and inviting." 
-				class="field-photos" 
-				onerror="this.style.display='none'; console.log('Image not found: ${id}-1.jpg');" />
+			${imageHtml}
 		`;
 	}
 
@@ -355,6 +362,15 @@ function init() {
 			prefectureGroups[prefecture].push(row);
 		});
 		
+		// 各都道府県グループ内でも50音順に並び替え
+		Object.keys(prefectureGroups).forEach(prefecture => {
+			prefectureGroups[prefecture].sort((a, b) => {
+				const hiraA = toHiragana((a[10] || a[2] || '').toString().normalize('NFKC'));
+				const hiraB = toHiragana((b[10] || b[2] || '').toString().normalize('NFKC'));
+				return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
+			});
+		});
+		
 		// 都道府県順に並べ替え（categoryで定義された都道府県のみ）
 		const prefectureOrder = [
 			'東京', '千葉', '茨城', '埼玉', 'その他'
@@ -367,10 +383,16 @@ function init() {
 			
 			const fieldsCount = prefectureGroups[prefecture].length;
 			
-			// 現在地の都道府県の場合は展開、その他は畳む
-			const isCurrentLocation = prefecture === currentLocationPrefecture;
-			const displayStyle = isCurrentLocation ? 'block' : 'none';
-			const iconText = isCurrentLocation ? '▼' : '▶';
+			// 展開状態を確認（expandedPrefecturesセットに基づく）
+			let isExpanded = expandedPrefectures.has(prefecture);
+			// 現在地の都道府県の場合は初回のみ展開状態に追加
+			if (!expandedPrefectures.size && prefecture === currentLocationPrefecture) {
+				expandedPrefectures.add(prefecture);
+				isExpanded = true;
+			}
+			
+			const displayStyle = isExpanded ? 'block' : 'none';
+			const iconText = isExpanded ? '▼' : '▶';
 			
 			html += `
 				<div class="prefecture-group">
@@ -438,13 +460,12 @@ function init() {
 			});
 		});
 		
-		// 初期状態の展開都道府県を設定
-		expandedPrefectures.clear();
-		if (currentLocationPrefecture) {
+		// 初期状態での現在地都道府県を展開（一度だけ）
+		if (!expandedPrefectures.size && currentLocationPrefecture) {
 			expandedPrefectures.add(currentLocationPrefecture);
 		}
 		
-		// 初期状態でマーカーの表示を更新
+		// マーカーの表示を更新
 		updateMarkerVisibilityByToggle();
 	}
 
