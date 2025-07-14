@@ -197,7 +197,7 @@ function init() {
 		console.log('NearestStation markers to add:', data.NearestStation);
 
 		allRows.forEach((row, index) => {
-			const [id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation,OtherInfo,lunch,num] = row;
+			const [id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation,OtherInfo,lunch,num,where] = row;
 			const latNum = parseFloat(lat), lonNum = parseFloat(lon);
 			if (!lat || !lon || isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
 				markers.push(null); markerDataList.push(null); return;
@@ -229,14 +229,14 @@ function init() {
 					if (infoPanel) infoPanel.innerHTML = '';
 					lastClickedMarker = null;
 				} else {
-					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num);
+					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num,where);
 					lastClickedMarker = marker;
 				}
 				const leftPanel = document.getElementById('left-panel');
 				if (leftPanel) {
 					leftPanel.classList.remove('closed');
 					document.body.classList.add('panel-open');
-					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num);
+					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where);
 					const backBtn = document.getElementById('back-to-list-btn');
 					if (backBtn) {
 						backBtn.addEventListener('click', function() {
@@ -261,7 +261,7 @@ function init() {
 		});
 	}
 
-	function markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num) {
+	function markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where) {
 		let linksHtml = '';
 		if (SiteLink && String(SiteLink).trim() !== '') linksHtml += `<a href="${SiteLink}" target="_blank">公式サイト</a><br>`;
 		if (BookLink && String(BookLink).trim() !== '') linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
@@ -284,6 +284,7 @@ function init() {
 			<h2>${field_name}</h2>
 			${linksHtml}
 			<p>最寄り駅: ${NearestStation}</p>
+			<p>所在地: ${where}</p>
 			<p>定期会料金: ${RegularMeetingCharge}円</p>
 			<p>貸し切り料金: ${CharterCharge}円</p>
 			${imageHtml}
