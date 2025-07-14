@@ -197,7 +197,24 @@ function init() {
 		console.log('NearestStation markers to add:', data.NearestStation);
 
 		allRows.forEach((row, index) => {
-			const [id,category,field_name,RegularMeetingCharge,CharterCharge,lat,lon,SiteLink,BookLink,BusBookLink,Reading,NearestStation,OtherInfo,lunch,num,where] = row;
+			// より安全な配列アクセス
+			const id = row[0] || '';
+			const category = row[1] || '';
+			const field_name = row[2] || '';
+			const RegularMeetingCharge = row[3] || '';
+			const CharterCharge = row[4] || '';
+			const lat = row[5] || '';
+			const lon = row[6] || '';
+			const SiteLink = row[7] || '';
+			const BookLink = row[8] || '';
+			const BusBookLink = row[9] || '';
+			const Reading = row[10] || '';
+			const NearestStation = row[11] || '';
+			const OtherInfo = row[12] || '';
+			const lunch = row[13] || '';
+			const num = row[14] || '';
+			const where = row[15] || '';
+			
 			const latNum = parseFloat(lat), lonNum = parseFloat(lon);
 			if (!lat || !lon || isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
 				markers.push(null); markerDataList.push(null); return;
@@ -229,7 +246,7 @@ function init() {
 					if (infoPanel) infoPanel.innerHTML = '';
 					lastClickedMarker = null;
 				} else {
-					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num,where);
+					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where);
 					lastClickedMarker = marker;
 				}
 				const leftPanel = document.getElementById('left-panel');
@@ -278,13 +295,19 @@ function init() {
 				onerror="this.style.display='none'; console.log('Image not found: ${id}-1.jpg');" />`;
 		}
 		
+		// 所在地の安全な表示
+		let whereHtml = '';
+		if (where !== undefined && where !== null && String(where).trim() !== '' && String(where).trim() !== 'undefined') {
+			whereHtml = `<p>所在地: ${String(where).trim()}</p>`;
+		}
+		
 		// 「一覧に戻る」ボタンを先頭に追加
 		return `
 			<button id="back-to-list-btn" class="back-to-list-btn">一覧に戻る</button>
 			<h2>${field_name}</h2>
 			${linksHtml}
 			<p>最寄り駅: ${NearestStation}</p>
-			<p>所在地: ${where}</p>
+			${whereHtml}
 			<p>定期会料金: ${RegularMeetingCharge}円</p>
 			<p>貸し切り料金: ${CharterCharge}円</p>
 			${imageHtml}
@@ -345,15 +368,21 @@ function init() {
 		
 		// 50音順に並べ替え
 		const sortedRows = [...rowsToShow].sort((a, b) => {
-			const hiraA = toHiragana((a[10] || a[2] || '').toString().normalize('NFKC'));
-			const hiraB = toHiragana((b[10] || b[2] || '').toString().normalize('NFKC'));
+			const hiraA = toHiragana(((a && a[10]) || (a && a[2]) || '').toString().normalize('NFKC'));
+			const hiraB = toHiragana(((b && b[10]) || (b && b[2]) || '').toString().normalize('NFKC'));
 			return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
 		});
 		
 		// 都道府県別にグループ化
 		const prefectureGroups = {};
 		sortedRows.forEach(row => {
-			const [id, category, field_name, , , , , , , , , nearestStation] = row;
+			if (!row || !Array.isArray(row)) return;
+			
+			const id = row[0] || '';
+			const category = row[1] || '';
+			const field_name = row[2] || '';
+			const nearestStation = row[11] || '';
+			
 			if (!field_name || String(field_name).trim() === '') return;
 			
 			const prefecture = extractPrefecture(field_name, nearestStation, category);
@@ -486,6 +515,8 @@ function init() {
 			const keywordAlphaKanaNorm = normalizeText(keywordAlphaKana);
 
 			filteredRows = filteredRows.filter(row => {
+				if (!row || !Array.isArray(row)) return false;
+				
 				const fieldName = (row[2] || '');
 				const reading = (row[10] || '');
 				const fieldNameLower = fieldName.toLowerCase();
@@ -537,13 +568,15 @@ function init() {
 		rows = filteredRows;
 		
 		// フィルタ適用時もトグル状態を考慮
-		const filteredIds = new Set(filteredRows.map(row => row[0]));
+		const filteredIds = new Set(filteredRows.map(row => row && row[0]).filter(id => id));
 		markers.forEach((marker, idx) => {
 			if (!marker) return;
 			const row = markerDataList[idx];
-			if (!row) return;
+			if (!row || !Array.isArray(row)) return;
 
-			const [, category, field_name, , , , , , , , , nearestStation] = row;
+			const category = row[1] || '';
+			const field_name = row[2] || '';
+			const nearestStation = row[11] || '';
 			const prefecture = extractPrefecture(field_name, nearestStation, category);
 			
 			// フィルタ条件とトグル状態の両方を満たす場合のみ表示
