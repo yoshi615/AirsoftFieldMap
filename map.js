@@ -254,6 +254,10 @@ function init() {
 					leftPanel.classList.remove('closed');
 					document.body.classList.add('panel-open');
 					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where);
+					
+					// スライドショーのイベントリスナーを設定
+					setupSlideshowListeners();
+					
 					const backBtn = document.getElementById('back-to-list-btn');
 					if (backBtn) {
 						backBtn.addEventListener('click', function() {
@@ -286,13 +290,36 @@ function init() {
 		if (OtherInfo && String(OtherInfo).trim() !== '') linksHtml += `<p>${OtherInfo}</p><br>`;
 		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食代は別途${lunch}円</p><br>`;
 		
-		// 画像のHTMLを条件付きで追加
+		// 画像のHTMLを条件付きで追加（スライドショー機能付き）
 		let imageHtml = '';
 		if (num && String(num).trim() !== '') {
-			imageHtml = `<img src="images/${id}-1.jpg" 
-				alt="Airsoft field named ${field_name} showing main play area and surroundings. The environment includes outdoor terrain and field structures. Any visible signage reads ${field_name}. The atmosphere is energetic and inviting." 
-				class="field-photos" 
-				onerror="this.style.display='none'; console.log('Image not found: ${id}-1.jpg');" />`;
+			const numValue = parseInt(String(num).trim());
+			if (numValue >= 2) {
+				// 複数枚の画像がある場合はスライドショー形式
+				imageHtml = `
+					<div class="image-slideshow" data-field-id="${id}" data-total-slides="${numValue}">
+						<div class="slideshow-container">
+							<button class="prev-btn" data-field-id="${id}">&lt;</button>
+							<img id="slideshow-img-${id}" src="images/${id}-1.jpg" 
+								alt="Airsoft field named ${field_name} showing main play area and surroundings. The environment includes outdoor terrain and field structures. Any visible signage reads ${field_name}. The atmosphere is energetic and inviting." 
+								class="field-photos slideshow-image expandable-image" 
+								data-field-id="${id}"
+								onerror="this.style.display='none'; console.log('Image not found: ${id}-1.jpg');" />
+							<button class="next-btn" data-field-id="${id}">&gt;</button>
+						</div>
+						<div class="slide-counter">
+							<span id="slide-current-${id}">1</span> / <span id="slide-total-${id}">${numValue}</span>
+						</div>
+					</div>
+				`;
+			} else {
+				// 1枚の場合は従来通り
+				imageHtml = `<img src="images/${id}-1.jpg" 
+					alt="Airsoft field named ${field_name} showing main play area and surroundings. The environment includes outdoor terrain and field structures. Any visible signage reads ${field_name}. The atmosphere is energetic and inviting." 
+					class="field-photos expandable-image" 
+					data-field-id="${id}"
+					onerror="this.style.display='none'; console.log('Image not found: ${id}-1.jpg');" />`;
+			}
 		}
 		
 		// 所在地の安全な表示
@@ -391,7 +418,6 @@ function init() {
 			}
 			prefectureGroups[prefecture].push(row);
 		});
-		
 		// 各都道府県グループ内でも50音順に並び替え
 		Object.keys(prefectureGroups).forEach(prefecture => {
 			prefectureGroups[prefecture].sort((a, b) => {
@@ -586,6 +612,149 @@ function init() {
 			
 			marker.getElement().style.display = isVisible ? '' : 'none';
 		});
+	}
+
+	// スライドショーのイベントリスナーを設定する関数
+	function setupSlideshowListeners() {
+		// 既存のリスナーを削除（重複防止）
+		document.querySelectorAll('.prev-btn, .next-btn').forEach(btn => {
+			const newBtn = btn.cloneNode(true);
+			btn.parentNode.replaceChild(newBtn, btn);
+		});
+		
+		// 新しいリスナーを設定
+		document.querySelectorAll('.prev-btn').forEach(btn => {
+			btn.addEventListener('click', function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				const fieldId = this.getAttribute('data-field-id');
+				changeSlide(fieldId, -1);
+			});
+		});
+		
+		document.querySelectorAll('.next-btn').forEach(btn => {
+			btn.addEventListener('click', function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				const fieldId = this.getAttribute('data-field-id');
+				changeSlide(fieldId, 1);
+			});
+		});
+
+		// 画像クリック/タップで全画面表示のリスナーを設定
+		setupImageExpandListeners();
+	}
+
+	// スライドショー機能を修正
+	function changeSlide(id, direction) {
+		// スライドショーコンテナから情報を取得
+		const slideshowContainer = document.querySelector(`.image-slideshow[data-field-id="${id}"]`);
+		if (!slideshowContainer) return;
+		
+		const totalSlides = parseInt(slideshowContainer.getAttribute('data-total-slides')) || 1;
+		const currentSpan = document.getElementById(`slide-current-${id}`);
+		const imgElement = document.getElementById(`slideshow-img-${id}`);
+		
+		if (!currentSpan || !imgElement) return;
+		
+		let currentIndex = parseInt(currentSpan.textContent) || 1;
+		let newIndex = currentIndex + direction;
+		
+		// ループ処理
+		if (newIndex > totalSlides) {
+			newIndex = 1;
+		} else if (newIndex < 1) {
+			newIndex = totalSlides;
+		}
+		
+		// 画像を切り替え
+		imgElement.src = `images/${id}-${newIndex}.jpg`;
+		currentSpan.textContent = newIndex;
+		
+		// 画像拡大機能のリスナーを再設定
+		setupImageExpandListeners();
+		
+		console.log(`Slide changed for ${id}: ${currentIndex} -> ${newIndex}`);
+	}
+
+	// 画像拡大表示のイベントリスナーを設定する関数
+	function setupImageExpandListeners() {
+		// 既存のリスナーを削除（重複防止）
+		document.querySelectorAll('.expandable-image').forEach(img => {
+			const newImg = img.cloneNode(true);
+			img.parentNode.replaceChild(newImg, img);
+		});
+		
+		// 新しいリスナーを設定
+		document.querySelectorAll('.expandable-image').forEach(img => {
+			img.addEventListener('click', function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				expandImage(this.src, this.alt);
+			});
+		});
+	}
+
+	// 画像を全画面表示する関数
+	function expandImage(src, alt) {
+		// 既存のモーダルがあれば削除
+		const existingModal = document.getElementById('image-modal');
+		if (existingModal) {
+			existingModal.remove();
+		}
+
+		// モーダル要素を作成
+		const modal = document.createElement('div');
+		modal.id = 'image-modal';
+		modal.className = 'image-modal';
+		
+		const modalContent = document.createElement('div');
+		modalContent.className = 'modal-content';
+		
+		const closeBtn = document.createElement('span');
+		closeBtn.className = 'close-modal';
+		closeBtn.innerHTML = '&times;';
+		
+		const expandedImg = document.createElement('img');
+		expandedImg.src = src;
+		expandedImg.alt = alt;
+		expandedImg.className = 'expanded-image';
+		
+		modalContent.appendChild(closeBtn);
+		modalContent.appendChild(expandedImg);
+		modal.appendChild(modalContent);
+		document.body.appendChild(modal);
+		
+		// モーダルを表示
+		setTimeout(() => {
+			modal.classList.add('show');
+		}, 10);
+		
+		// 閉じるイベントリスナー
+		const closeModal = () => {
+			modal.classList.remove('show');
+			setTimeout(() => {
+				if (modal.parentNode) {
+					modal.parentNode.removeChild(modal);
+				}
+			}, 300);
+		};
+		
+		closeBtn.addEventListener('click', closeModal);
+		modal.addEventListener('click', function(e) {
+			if (e.target === modal) {
+				closeModal();
+			}
+		});
+		
+		// ESCキーで閉じる
+		const handleKeyPress = (e) => {
+			if (e.key === 'Escape') {
+				closeModal();
+				document.removeEventListener('keydown', handleKeyPress);
+			}
+		};
+		document.addEventListener('keydown', handleKeyPress);
 	}
 
 	const markerSearch = document.getElementById('marker-search');
