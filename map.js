@@ -70,12 +70,7 @@ function init() {
 
 		// 現在地から都道府県を判定する関数
 		function getCurrentLocationPrefecture(lat, lon) {
-			// 簡易的な座標による都道府県判定
-			// 東京: 35.6762°N, 139.6503°E 周辺
-			// 千葉: 35.6074°N, 140.1065°E 周辺  
-			// 茨城: 36.3418°N, 140.4468°E 周辺
-			// 埼玉: 35.8617°N, 139.6455°E 周辺
-			
+			// 簡易的な座標による都道府県判定			
 			if (lat >= 35.5 && lat <= 35.8 && lon >= 139.3 && lon <= 139.9) {
 				return '東京';
 			} else if (lat >= 35.2 && lat <= 36.1 && lon >= 139.8 && lon <= 140.9) {
@@ -511,6 +506,8 @@ function init() {
 					if (thisImg && thisImg.tagName === 'IMG') thisImg.src = 'images/pin_magenta.png';
 					lastActiveMarkerIndex = idx;
 
+					leftPanel.scrollTop = 0;
+
 					markers[idx].getElement().dispatchEvent(new Event('click', {bubbles: true}));
 				}
 			});
@@ -703,6 +700,12 @@ function init() {
 			existingModal.remove();
 		}
 
+		// field-idと現在のスライド番号を取得
+		const fieldId = extractFieldIdFromSrc(src);
+		const currentSlide = extractSlideNumberFromSrc(src);
+		const slideshowContainer = document.querySelector(`.image-slideshow[data-field-id="${fieldId}"]`);
+		const totalSlides = slideshowContainer ? parseInt(slideshowContainer.getAttribute('data-total-slides')) : 1;
+
 		// モーダル要素を作成
 		const modal = document.createElement('div');
 		modal.id = 'image-modal';
@@ -719,11 +722,106 @@ function init() {
 		expandedImg.src = src;
 		expandedImg.alt = alt;
 		expandedImg.className = 'expanded-image';
+		expandedImg.id = 'expanded-img';
 		
 		modalContent.appendChild(closeBtn);
 		modalContent.appendChild(expandedImg);
 		modal.appendChild(modalContent);
 		document.body.appendChild(modal);
+		
+		// タッチイベント用の変数
+		let startX = 0;
+		let endX = 0;
+		let currentSlideNumber = currentSlide;
+		
+		// スワイプ処理関数
+		function changeExpandedSlide(direction) {
+			if (totalSlides <= 1) return;
+			
+			let newSlideNumber = currentSlideNumber + direction;
+			
+			// ループ処理
+			if (newSlideNumber > totalSlides) {
+				newSlideNumber = 1;
+			} else if (newSlideNumber < 1) {
+				newSlideNumber = totalSlides;
+			}
+			
+			currentSlideNumber = newSlideNumber;
+			expandedImg.src = `images/${fieldId}-${newSlideNumber}.jpg`;
+			
+			// 元のスライドショーも同期
+			const originalImg = document.getElementById(`slideshow-img-${fieldId}`);
+			const currentSpan = document.getElementById(`slide-current-${fieldId}`);
+			if (originalImg) originalImg.src = `images/${fieldId}-${newSlideNumber}.jpg`;
+			if (currentSpan) currentSpan.textContent = newSlideNumber;
+		}
+		
+		// タッチイベントリスナー
+		modal.addEventListener('touchstart', function(e) {
+			startX = e.touches[0].clientX;
+		}, { passive: true });
+		
+		modal.addEventListener('touchend', function(e) {
+			endX = e.changedTouches[0].clientX;
+			const diffX = startX - endX;
+			
+			// 50px以上のスワイプで反応
+			if (Math.abs(diffX) > 50) {
+				if (diffX > 0) {
+					// 左スワイプ（次の画像）
+					changeExpandedSlide(1);
+				} else {
+					// 右スワイプ（前の画像）
+					changeExpandedSlide(-1);
+				}
+			}
+		}, { passive: true });
+		
+		// マウスイベント（デスクトップ用）
+		let isDragging = false;
+		let startMouseX = 0;
+		
+		modal.addEventListener('mousedown', function(e) {
+			isDragging = true;
+			startMouseX = e.clientX;
+		});
+		
+		modal.addEventListener('mousemove', function(e) {
+			if (!isDragging) return;
+			e.preventDefault();
+		});
+		
+		modal.addEventListener('mouseup', function(e) {
+			if (!isDragging) return;
+			isDragging = false;
+			
+			const diffX = startMouseX - e.clientX;
+			
+			// 50px以上のドラッグで反応
+			if (Math.abs(diffX) > 50) {
+				if (diffX > 0) {
+					// 左ドラッグ（次の画像）
+					changeExpandedSlide(1);
+				} else {
+					// 右ドラッグ（前の画像）
+					changeExpandedSlide(-1);
+				}
+			}
+		});
+		
+		// キーボードイベント（矢印キー）
+		const handleKeyPress = (e) => {
+			if (e.key === 'Escape') {
+				closeModal();
+				document.removeEventListener('keydown', handleKeyPress);
+			} else if (e.key === 'ArrowLeft') {
+				changeExpandedSlide(-1);
+			} else if (e.key === 'ArrowRight') {
+				changeExpandedSlide(1);
+			}
+		};
+		document.addEventListener('keydown', handleKeyPress);
 		
 		// モーダルを表示
 		setTimeout(() => {
@@ -738,6 +836,7 @@ function init() {
 					modal.parentNode.removeChild(modal);
 				}
 			}, 300);
+			document.removeEventListener('keydown', handleKeyPress);
 		};
 		
 		closeBtn.addEventListener('click', closeModal);
@@ -746,15 +845,18 @@ function init() {
 				closeModal();
 			}
 		});
-		
-		// ESCキーで閉じる
-		const handleKeyPress = (e) => {
-			if (e.key === 'Escape') {
-				closeModal();
-				document.removeEventListener('keydown', handleKeyPress);
-			}
-		};
-		document.addEventListener('keydown', handleKeyPress);
+	}
+	
+	// srcからfield-idを抽出する関数
+	function extractFieldIdFromSrc(src) {
+		const match = src.match(/images\/(.+)-\d+\.jpg/);
+		return match ? match[1] : null;
+	}
+	
+	// srcからスライド番号を抽出する関数
+	function extractSlideNumberFromSrc(src) {
+		const match = src.match(/images\/.+-(\d+)\.jpg/);
+		return match ? parseInt(match[1]) : 1;
 	}
 
 	const markerSearch = document.getElementById('marker-search');
