@@ -37,6 +37,24 @@ function init() {
 	let currentLocationPrefecture = null; // 現在地の都道府県を保持
 	let expandedPrefectures = new Set(); // 展開中の都道府県を管理
 
+	// ローディング表示/非表示の関数を追加
+	function showLoading() {
+		const loadingContainer = document.getElementById('loading-container');
+		if (loadingContainer) {
+			loadingContainer.classList.remove('hidden');
+		}
+	}
+
+	function hideLoading() {
+		const loadingContainer = document.getElementById('loading-container');
+		if (loadingContainer) {
+			loadingContainer.classList.add('hidden');
+		}
+	}
+
+	// 初期状態でローディングを表示
+	showLoading();
+
 	initMap();
 
 	function initMap() {
@@ -87,6 +105,8 @@ function init() {
 		function showCurrentLocation() {
 			if (!navigator.geolocation) {
 				console.log('このブラウザは位置情報サービスをサポートしていません。');
+				// 位置情報が取得できない場合でもマーカーリストを表示
+				showMarkerList(allRows);
 				return;
 			}
 
@@ -387,6 +407,9 @@ function init() {
 	function showMarkerList(rowsToShow) {
 		const leftPanel = document.getElementById('left-panel');
 		if (!leftPanel) return;
+		
+		// ローディングを非表示にする
+		hideLoading();
 		
 		// 50音順に並べ替え
 		const sortedRows = [...rowsToShow].sort((a, b) => {
