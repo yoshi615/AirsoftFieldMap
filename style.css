@@ -487,3 +487,89 @@
         margin-bottom: 10px;
     }
 }
+
+/* 都道府県境界表示関連のスタイル */
+.prefecture-group {
+    margin-bottom: 5px;
+}
+
+.prefecture-toggle {
+    width: 88%;
+    text-align: left;
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    color: #495057;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.prefecture-toggle:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.prefecture-toggle:active {
+    background: #dee2e6;
+}
+
+.toggle-icon {
+    font-weight: bold;
+    font-size: 18px;
+    margin-right: 8px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.prefecture-fields {
+    margin: 0;
+    padding: 0;
+    background: #ffffff;
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+}
+
+.prefecture-fields li {
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.prefecture-fields li:last-child {
+    border-bottom: none;
+}
+
+.prefecture-fields .marker-list-btn {
+    width: 100%;
+    text-align: left;
+    padding: 12px 20px;
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background-color 0.2s ease;
+}
+
+.prefecture-fields .marker-list-btn:hover {
+    background-color: #f8f9fa;
+    text-decoration: none;
+}
+
+/* モバイル対応 */
+@media (max-width: 767px) {
+    .prefecture-toggle {
+        padding: 12px 15px;
+        font-size: 15px;
+    }
+    
+    .prefecture-fields .marker-list-btn {
+        padding: 10px 18px;
+        font-size: 14px;
+    }
+}

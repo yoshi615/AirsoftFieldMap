@@ -37,6 +37,58 @@ function init() {
 	let currentLocationPrefecture = null; // 現在地の都道府県を保持
 	let expandedPrefectures = new Set(); // 展開中の都道府県を管理
 
+	// 47都道府県の中心座標とズームレベルを定義（実際の境界に基づいて調整）
+	const prefectureCenterZoom = {
+		'北海道': { center: [143.2141, 43.0642], zoom: 5.5 },
+		'青森': { center: [140.7402, 40.8244], zoom: 7.5 },
+		'岩手': { center: [141.1527, 39.7036], zoom: 7.0 },
+		'宮城': { center: [140.8719, 38.2682], zoom: 8.0 },
+		'秋田': { center: [140.1024, 39.7186], zoom: 7.5 },
+		'山形': { center: [140.3633, 38.2404], zoom: 8.0 },
+		'福島': { center: [140.4677, 37.7500], zoom: 7.5 },
+		'茨城': { center: [140.4467, 36.3414], zoom: 8.0 },
+		'栃木': { center: [139.8837, 36.5658], zoom: 8.5 },
+		'群馬': { center: [139.0608, 36.3911], zoom: 8.5 },
+		'埼玉': { center: [139.6489, 35.8617], zoom: 9.0 },
+		'千葉': { center: [140.1233, 35.6049], zoom: 8.5 },
+		'東京': { center: [139.6917, 35.6895], zoom: 9.5 },
+		'神奈川': { center: [139.6425, 35.4478], zoom: 9.0 },
+		'新潟': { center: [139.0235, 37.9026], zoom: 7.0 },
+		'富山': { center: [137.2114, 36.6959], zoom: 8.5 },
+		'石川': { center: [136.6256, 36.5944], zoom: 8.0 },
+		'福井': { center: [136.2217, 35.9432], zoom: 8.5 },
+		'山梨': { center: [138.5684, 35.6642], zoom: 8.5 },
+		'長野': { center: [138.1811, 36.2048], zoom: 7.5 },
+		'岐阜': { center: [137.2110, 35.3912], zoom: 7.5 },
+		'静岡': { center: [138.3833, 34.9769], zoom: 8.0 },
+		'愛知': { center: [137.1805, 35.1803], zoom: 8.5 },
+		'三重': { center: [136.5086, 34.7302], zoom: 8.0 },
+		'滋賀': { center: [136.1018, 35.0045], zoom: 9.0 },
+		'京都': { center: [135.7681, 35.0116], zoom: 8.5 },
+		'大阪': { center: [135.5200, 34.6937], zoom: 9.5 },
+		'兵庫': { center: [134.6900, 34.6913], zoom: 8.0 },
+		'奈良': { center: [135.8327, 34.6851], zoom: 9.0 },
+		'和歌山': { center: [135.1675, 34.2261], zoom: 8.0 },
+		'鳥取': { center: [134.2324, 35.5038], zoom: 8.5 },
+		'島根': { center: [132.5564, 35.4725], zoom: 7.5 },
+		'岡山': { center: [133.9348, 34.6617], zoom: 8.5 },
+		'広島': { center: [132.4596, 34.3963], zoom: 8.0 },
+		'山口': { center: [131.4706, 34.3859], zoom: 7.5 },
+		'徳島': { center: [134.5593, 34.0658], zoom: 8.5 },
+		'香川': { center: [134.0434, 34.3401], zoom: 9.5 },
+		'愛媛': { center: [132.7661, 33.8416], zoom: 8.0 },
+		'高知': { center: [133.5311, 33.5597], zoom: 7.5 },
+		'福岡': { center: [130.4017, 33.6064], zoom: 8.5 },
+		'佐賀': { center: [130.2985, 33.2494], zoom: 9.0 },
+		'長崎': { center: [129.8737, 32.7503], zoom: 7.5 },
+		'熊本': { center: [130.7417, 32.7898], zoom: 8.0 },
+		'大分': { center: [131.6127, 33.2382], zoom: 8.0 },
+		'宮崎': { center: [131.4214, 32.0106], zoom: 8.0 },
+		'鹿児島': { center: [130.5581, 31.5602], zoom: 7.0 },
+		'沖縄': { center: [127.6792, 26.2124], zoom: 7.0 },
+		'その他': { center: [139.98886293394258, 35.853556991089334], zoom: 8.7 }
+	};
+
 	// ローディング表示/非表示の関数を追加
 	function showLoading() {
 		const loadingContainer = document.getElementById('loading-container');
@@ -86,9 +138,93 @@ function init() {
 			zoom: zoom,
 		});
 
-		// 現在地から都道府県を判定する関数
+		// 都道府県境界データを追加する関数
+		async function addPrefectureBoundaries() {
+			try {
+				// 都道府県境界のGeoJSONデータを取得
+				const response = await fetch('https://raw.githubusercontent.com/dataofjapan/land/master/japan.geojson');
+				const prefectureData = await response.json();
+				
+				// ソースとして都道府県データを追加
+				map.addSource('prefecture-boundaries', {
+					'type': 'geojson',
+					'data': prefectureData
+				});
+				
+				// 都道府県境界線レイヤーを追加（全体）
+				map.addLayer({
+					'id': 'prefecture-borders',
+					'type': 'line',
+					'source': 'prefecture-boundaries',
+					'layout': {},
+					'paint': {
+						'line-color': '#666666',
+						'line-width': 1,
+						'line-opacity': 0.6
+					}
+				});
+				
+				// ハイライト用の塗りつぶしレイヤーを追加
+				map.addLayer({
+					'id': 'prefecture-highlight-fill',
+					'type': 'fill',
+					'source': 'prefecture-boundaries',
+					'layout': {},
+					'paint': {
+						'fill-color': '#007bff',
+						'fill-opacity': 0.1
+					},
+					'filter': ['==', 'name_ja', ''] // 初期状態では何も表示しない
+				});
+				
+				// ハイライト用の境界線レイヤーを追加
+				map.addLayer({
+					'id': 'prefecture-highlight-border',
+					'type': 'line',
+					'source': 'prefecture-boundaries',
+					'layout': {},
+					'paint': {
+						'line-color': '#007bff',
+						'line-width': 3,
+						'line-opacity': 0.8
+					},
+					'filter': ['==', 'name_ja', ''] // 初期状態では何も表示しない
+				});
+				
+			} catch (error) {
+				console.error('都道府県境界データの読み込みに失敗しました:', error);
+			}
+		}
+		
+		// 展開された都道府県をハイライトする関数
+		function updatePrefectureHighlight() {
+			if (!map.getSource('prefecture-boundaries')) return;
+			
+			// 展開されている都道府県名の配列を作成
+			const expandedPrefectureNames = Array.from(expandedPrefectures);
+			
+			if (expandedPrefectureNames.length > 0) {
+				// 複数の都道府県をハイライトするフィルターを作成
+				let filter;
+				if (expandedPrefectureNames.length === 1) {
+					filter = ['==', 'name_ja', expandedPrefectureNames[0]];
+				} else {
+					filter = ['in', 'name_ja', ...expandedPrefectureNames];
+				}
+				
+				// ハイライトレイヤーのフィルターを更新
+				map.setFilter('prefecture-highlight-fill', filter);
+				map.setFilter('prefecture-highlight-border', filter);
+			} else {
+				// ハイライトを非表示
+				map.setFilter('prefecture-highlight-fill', ['==', 'name_ja', '']);
+				map.setFilter('prefecture-highlight-border', ['==', 'name_ja', '']);
+			}
+		}
+
+		// 現在地から都道府県を判定する関数（拡張版）
 		function getCurrentLocationPrefecture(lat, lon) {
-			// 簡易的な座標による都道府県判定			
+			// より詳細な座標による都道府県判定
 			if (lat >= 35.5 && lat <= 35.8 && lon >= 139.3 && lon <= 139.9) {
 				return '東京';
 			} else if (lat >= 35.2 && lat <= 36.1 && lon >= 139.8 && lon <= 140.9) {
@@ -97,6 +233,28 @@ function init() {
 				return '茨城';
 			} else if (lat >= 35.6 && lat <= 36.3 && lon >= 139.0 && lon <= 139.9) {
 				return '埼玉';
+			} else if (lat >= 35.1 && lat <= 35.9 && lon >= 139.0 && lon <= 139.8) {
+				return '神奈川';
+			} else if (lat >= 36.2 && lat <= 37.0 && lon >= 139.3 && lon <= 140.3) {
+				return '栃木';
+			} else if (lat >= 36.0 && lat <= 37.0 && lon >= 138.4 && lon <= 139.8) {
+				return '群馬';
+			} else if (lat >= 34.5 && lat <= 35.5 && lon >= 137.4 && lon <= 139.0) {
+				return '静岡';
+			} else if (lat >= 34.6 && lat <= 35.7 && lon >= 136.5 && lon <= 137.7) {
+				return '愛知';
+			} else if (lat >= 34.3 && lat <= 35.6 && lon >= 135.0 && lon <= 136.8) {
+				return '大阪';
+			} else if (lat >= 34.3 && lat <= 35.8 && lon >= 134.8 && lon <= 136.5) {
+				return '兵庫';
+			} else if (lat >= 34.8 && lat <= 35.8 && lon >= 135.0 && lon <= 136.2) {
+				return '京都';
+			} else if (lat >= 33.0 && lat <= 34.5 && lon >= 129.5 && lon <= 131.2) {
+				return '福岡';
+			} else if (lat >= 40.2 && lat <= 45.8 && lon >= 139.3 && lon <= 148.9) {
+				return '北海道';
+			} else if (lat >= 26.0 && lat <= 26.9 && lon >= 127.0 && lon <= 128.4) {
+				return '沖縄';
 			}
 			return null;
 		}
@@ -164,6 +322,9 @@ function init() {
 					maxZoom: 15
 				});
 			}
+
+			// 都道府県境界を追加
+			addPrefectureBoundaries();
 
 			showCurrentLocation();
 			
@@ -365,14 +526,57 @@ function init() {
 		});
 	}
 
-	// 都道府県を抽出する関数を追加
+	// 都道府県を抽出する関数を拡張
 	function extractPrefecture(fieldName, nearestStation, category) {
 		// categoryの数字から都道府県を判定（READMEの仕様に基づく）
 		const prefectureMap = {
 			'0': '東京',
 			'1': '千葉', 
 			'2': '茨城',
-			'3': '埼玉'
+			'3': '埼玉',
+			'4': '神奈川',
+			'5': '栃木',
+			'6': '群馬',
+			'7': '静岡',
+			'8': '愛知',
+			'9': '大阪',
+			'10': '兵庫',
+			'11': '京都',
+			'12': '福岡',
+			'13': '北海道',
+			'14': '青森',
+			'15': '岩手',
+			'16': '宮城',
+			'17': '秋田',
+			'18': '山形',
+			'19': '福島',
+			'20': '新潟',
+			'21': '富山',
+			'22': '石川',
+			'23': '福井',
+			'24': '山梨',
+			'25': '長野',
+			'26': '岐阜',
+			'27': '三重',
+			'28': '滋賀',
+			'29': '奈良',
+			'30': '和歌山',
+			'31': '鳥取',
+			'32': '島根',
+			'33': '岡山',
+			'34': '広島',
+			'35': '山口',
+			'36': '徳島',
+			'37': '香川',
+			'38': '愛媛',
+			'39': '高知',
+			'40': '佐賀',
+			'41': '長崎',
+			'42': '熊本',
+			'43': '大分',
+			'44': '宮崎',
+			'45': '鹿児島',
+			'46': '沖縄'
 		};
 		
 		// categoryから都道府県を判定
@@ -445,9 +649,15 @@ function init() {
 			});
 		});
 		
-		// 都道府県順に並べ替え（categoryで定義された都道府県のみ）
+		// 都道府県順に並べ替え（47都道府県 + その他）
 		const prefectureOrder = [
-			'東京', '千葉', '茨城', '埼玉', 'その他'
+			'北海道', '青森', '岩手', '宮城', '秋田', '山形', '福島',
+			'茨城', '栃木', '群馬', '埼玉', '千葉', '東京', '神奈川',
+			'新潟', '富山', '石川', '福井', '山梨', '長野', '岐阜',
+			'静岡', '愛知', '三重', '滋賀', '京都', '大阪', '兵庫',
+			'奈良', '和歌山', '鳥取', '島根', '岡山', '広島', '山口',
+			'徳島', '香川', '愛媛', '高知', '福岡', '佐賀', '長崎',
+			'熊本', '大分', '宮崎', '鹿児島', '沖縄', 'その他'
 		];
 		
 		let html = '<div class="prefecture-list">';
@@ -458,15 +668,15 @@ function init() {
 			const fieldsCount = prefectureGroups[prefecture].length;
 			
 			// 展開状態を確認（expandedPrefecturesセットに基づく）
-			let isExpanded = expandedPrefectures.has(prefecture);
+// 			let isExpanded = expandedPrefectures.has(prefecture);
 			// 現在地の都道府県の場合は初回のみ展開状態に追加
-			if (!expandedPrefectures.size && prefecture === currentLocationPrefecture) {
-				expandedPrefectures.add(prefecture);
-				isExpanded = true;
-			}
+// 			if (!expandedPrefectures.size && prefecture === currentLocationPrefecture) {
+// 				expandedPrefectures.add(prefecture);
+// 				isExpanded = true;
+// 			}
 			
-			const displayStyle = isExpanded ? 'block' : 'none';
-			const iconText = isExpanded ? '-' : '+';
+			const displayStyle = 'none'; // isExpanded ? 'block' : 'none';
+			const iconText = '+'; // isExpanded ? '-' : '+';
 			
 			html += `
 				<div class="prefecture-group">
@@ -502,14 +712,47 @@ function init() {
 					fieldsList.style.display = 'block';
 					toggleIcon.textContent = '-';
 					expandedPrefectures.add(prefecture);
+					
+					// 都道府県を展開したときに地図の中心とズームを調整
+					const prefectureConfig = prefectureCenterZoom[prefecture];
+					if (prefectureConfig) {
+						map.flyTo({
+							center: prefectureConfig.center,
+							zoom: prefectureConfig.zoom,
+							duration: 1000
+						});
+					}
 				} else {
 					fieldsList.style.display = 'none';
 					toggleIcon.textContent = '+';
 					expandedPrefectures.delete(prefecture);
+					
+					// 都道府県を閉じたときの処理
+					if (expandedPrefectures.size === 0) {
+						// 現在地がある場合は現在地を中心に表示
+						if (currentLocationMarker) {
+							const currentLngLat = currentLocationMarker.getLngLat();
+							map.flyTo({
+								center: [currentLngLat.lng, currentLngLat.lat],
+								zoom: 11,
+								duration: 1000
+							});
+						} else {
+							// 現在地がない場合はデフォルト位置
+							map.flyTo({
+								center: [139.98886293394258, 35.853556991089334],
+								zoom: 8.7,
+								duration: 1000
+							});
+						}
+					}
 				}
 				
 				// トグル状態変更時にマーカーの表示を更新
 				updateMarkerVisibilityByToggle();
+				
+				// 都道府県のハイライトを更新
+				updatePrefectureHighlight();
 			});
 		});
 		
@@ -537,9 +780,9 @@ function init() {
 		});
 		
 		// 初期状態での現在地都道府県を展開（一度だけ）
-		if (!expandedPrefectures.size && currentLocationPrefecture) {
-			expandedPrefectures.add(currentLocationPrefecture);
-		}
+// 		if (!expandedPrefectures.size && currentLocationPrefecture) {
+// 			expandedPrefectures.add(currentLocationPrefecture);
+// 		}
 		
 		// マーカーの表示を更新
 		updateMarkerVisibilityByToggle();
