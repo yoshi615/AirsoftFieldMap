@@ -222,6 +222,9 @@ function init() {
 			}
 		}
 
+		// updatePrefectureHighlight関数をグローバルスコープで使用できるようにする
+		window.updatePrefectureHighlight = updatePrefectureHighlight;
+
 		// 現在地から都道府県を判定する関数（拡張版）
 		function getCurrentLocationPrefecture(lat, lon) {
 			// より詳細な座標による都道府県判定
@@ -443,11 +446,38 @@ function init() {
 								if (prevImg && prevImg.tagName === 'IMG') prevImg.src = 'images/pin_blue.png';
 								lastActiveMarkerIndex = null;
 							}
+							// expandedPrefectures の状態を保持したまま一覧表示
 							showMarkerList(allRows);
-							map.flyTo({
-								center: [139.98886293394258, 35.853556991089334],
-								zoom: 10
-							});
+							
+							// 地図のビューを適切に調整
+							if (expandedPrefectures.size > 0) {
+								// 展開されている都道府県（現在は最大1つ）の中心に移動
+								const firstExpandedPrefecture = Array.from(expandedPrefectures)[0];
+								const prefectureConfig = prefectureCenterZoom[firstExpandedPrefecture];
+								if (prefectureConfig) {
+									map.flyTo({
+										center: prefectureConfig.center,
+										zoom: prefectureConfig.zoom,
+										duration: 1000
+									});
+								}
+							} else {
+								// 展開されている都道府県がない場合
+								if (currentLocationMarker) {
+									const currentLngLat = currentLocationMarker.getLngLat();
+									map.flyTo({
+										center: [currentLngLat.lng, currentLngLat.lat],
+										zoom: 11,
+										duration: 1000
+									});
+								} else {
+									map.flyTo({
+										center: [139.98886293394258, 35.853556991089334],
+										zoom: 8.7,
+										duration: 1000
+									});
+								}
+							}
 						});
 					}
 				}
@@ -668,15 +698,15 @@ function init() {
 			const fieldsCount = prefectureGroups[prefecture].length;
 			
 			// 展開状態を確認（expandedPrefecturesセットに基づく）
-// 			let isExpanded = expandedPrefectures.has(prefecture);
+			let isExpanded = expandedPrefectures.has(prefecture);
 			// 現在地の都道府県の場合は初回のみ展開状態に追加
-// 			if (!expandedPrefectures.size && prefecture === currentLocationPrefecture) {
-// 				expandedPrefectures.add(prefecture);
-// 				isExpanded = true;
-// 			}
+			if (!expandedPrefectures.size && prefecture === currentLocationPrefecture) {
+				expandedPrefectures.add(prefecture);
+				isExpanded = true;
+			}
 			
-			const displayStyle = 'none'; // isExpanded ? 'block' : 'none';
-			const iconText = '+'; // isExpanded ? '-' : '+';
+			const displayStyle = isExpanded ? 'block' : 'none';
+			const iconText = isExpanded ? '-' : '+';
 			
 			html += `
 				<div class="prefecture-group">
@@ -709,9 +739,23 @@ function init() {
 				const toggleIcon = this.querySelector('.toggle-icon');
 				
 				if (fieldsList.style.display === 'none') {
+					// 他の都道府県をすべて閉じる
+					expandedPrefectures.forEach(openPrefecture => {
+						if (openPrefecture !== prefecture) {
+							const otherFieldsList = leftPanel.querySelector(`.prefecture-fields[data-prefecture="${openPrefecture}"]`);
+							const otherToggleIcon = leftPanel.querySelector(`[data-prefecture="${openPrefecture}"] .toggle-icon`);
+							if (otherFieldsList) otherFieldsList.style.display = 'none';
+							if (otherToggleIcon) otherToggleIcon.textContent = '+';
+						}
+					});
+					
+					// expandedPrefecturesをクリアして現在の都道府県のみ追加
+					expandedPrefectures.clear();
+					expandedPrefectures.add(prefecture);
+					
+					// 現在クリックした都道府県を展開
 					fieldsList.style.display = 'block';
 					toggleIcon.textContent = '-';
-					expandedPrefectures.add(prefecture);
 					
 					// 都道府県を展開したときに地図の中心とズームを調整
 					const prefectureConfig = prefectureCenterZoom[prefecture];
@@ -723,6 +767,7 @@ function init() {
 						});
 					}
 				} else {
+					// 現在の都道府県を閉じる
 					fieldsList.style.display = 'none';
 					toggleIcon.textContent = '+';
 					expandedPrefectures.delete(prefecture);
@@ -752,7 +797,9 @@ function init() {
 				updateMarkerVisibilityByToggle();
 				
 				// 都道府県のハイライトを更新
-				updatePrefectureHighlight();
+				if (window.updatePrefectureHighlight) {
+					window.updatePrefectureHighlight();
+				}
 			});
 		});
 		
@@ -780,12 +827,17 @@ function init() {
 		});
 		
 		// 初期状態での現在地都道府県を展開（一度だけ）
-// 		if (!expandedPrefectures.size && currentLocationPrefecture) {
-// 			expandedPrefectures.add(currentLocationPrefecture);
-// 		}
+		if (!expandedPrefectures.size && currentLocationPrefecture) {
+			expandedPrefectures.add(currentLocationPrefecture);
+		}
 		
 		// マーカーの表示を更新
 		updateMarkerVisibilityByToggle();
+		
+		// 都道府県のハイライトを更新
+		if (window.updatePrefectureHighlight) {
+			window.updatePrefectureHighlight();
+		}
 	}
 
 	function applyFilters() {
@@ -1045,36 +1097,36 @@ function init() {
 		}, { passive: true });
 		
 		// マウスイベント（デスクトップ用）
-		let isDragging = false;
-		let startMouseX = 0;
+// 		let isDragging = false;
+// 		let startMouseX = 0;
 		
-		modal.addEventListener('mousedown', function(e) {
-			isDragging = true;
-			startMouseX = e.clientX;
-		});
+// 		modal.addEventListener('mousedown', function(e) {
+// 			isDragging = true;
+// 			startMouseX = e.clientX;
+// 		});
 		
-		modal.addEventListener('mousemove', function(e) {
-			if (!isDragging) return;
-			e.preventDefault();
-		});
+// 		modal.addEventListener('mousemove', function(e) {
+// 			if (!isDragging) return;
+// 			e.preventDefault();
+// 		});
 		
-		modal.addEventListener('mouseup', function(e) {
-			if (!isDragging) return;
-			isDragging = false;
+// 		modal.addEventListener('mouseup', function(e) {
+// 			if (!isDragging) return;
+// 			isDragging = false;
 			
-			const diffX = startMouseX - e.clientX;
+// 			const diffX = startMouseX - e.clientX;
 			
-			// 50px以上のドラッグで反応
-			if (Math.abs(diffX) > 50) {
-				if (diffX > 0) {
-					// 左ドラッグ（次の画像）
-					changeExpandedSlide(1);
-				} else {
-					// 右ドラッグ（前の画像）
-					changeExpandedSlide(-1);
-				}
-			}
-		});
+// 			// 50px以上のドラッグで反応
+// 			if (Math.abs(diffX) > 50) {
+// 				if (diffX > 0) {
+// 					// 左ドラッグ（次の画像）
+// 					changeExpandedSlide(1);
+// 				} else {
+// 					// 右ドラッグ（前の画像）
+// 					changeExpandedSlide(-1);
+// 				}
+// 			}
+// 		});
 		
 		// キーボードイベント（矢印キー）
 		const handleKeyPress = (e) => {
