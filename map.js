@@ -653,10 +653,17 @@ function init() {
 		// ローディングを非表示にする
 		hideLoading();
 		
-		// 50音順に並べ替え（変更: Reading(row[11]) を優先、無ければ field_name(row[3]) を使用）
+		// 50音順に並べ替え（変更: FieldList.csv の reading (row[11]) を第一キーにしてソート、
+		// reading が空の場合のみ field_name (row[3]) をフォールバックとして使用）
 		const sortedRows = [...rowsToShow].sort((a, b) => {
-			const keyA = (((a && a[11]) || (a && a[3]) || '')).toString().normalize('NFKC');
-			const keyB = (((b && b[11]) || (b && b[3]) || '')).toString().normalize('NFKC');
+			const readingA = ((a && a[11]) || '').toString().normalize('NFKC');
+			const readingB = ((b && b[11]) || '').toString().normalize('NFKC');
+			const fallbackA = ((a && a[3]) || '').toString().normalize('NFKC');
+			const fallbackB = ((b && b[3]) || '').toString().normalize('NFKC');
+
+			const keyA = readingA || fallbackA;
+			const keyB = readingB || fallbackB;
+
 			const hiraA = toHiragana(keyA);
 			const hiraB = toHiragana(keyB);
 			return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
@@ -680,11 +687,17 @@ function init() {
 			}
 			prefectureGroups[prefecture].push(row);
 		});
-		// 各都道府県グループ内でも50音順に並び替え（Reading を優先）
+		// 各都道府県グループ内でも50音順に並び替え（変更: reading を第一キーに） 
 		Object.keys(prefectureGroups).forEach(prefecture => {
 			prefectureGroups[prefecture].sort((a, b) => {
-				const keyA = (((a && a[11]) || (a && a[3]) || '')).toString().normalize('NFKC');
-				const keyB = (((b && b[11]) || (b && b[3]) || '')).toString().normalize('NFKC');
+				const readingA = ((a && a[11]) || '').toString().normalize('NFKC');
+				const readingB = ((b && b[11]) || '').toString().normalize('NFKC');
+				const fallbackA = ((a && a[3]) || '').toString().normalize('NFKC');
+				const fallbackB = ((b && b[3]) || '').toString().normalize('NFKC');
+
+				const keyA = readingA || fallbackA;
+				const keyB = readingB || fallbackB;
+
 				const hiraA = toHiragana(keyA);
 				const hiraB = toHiragana(keyB);
 				return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
