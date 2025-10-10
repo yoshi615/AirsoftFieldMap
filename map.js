@@ -36,6 +36,7 @@ function init() {
 	let currentLocationMarker = null; // 現在地マーカーを保持する変数
 	let currentLocationPrefecture = null; // 現在地の都道府県を保持
 	let expandedPrefectures = new Set(); // 展開中の都道府県を管理
+	let selectedTypes = new Set(); // 追加: 選択されている type 値（文字列）
 
 	// 47都道府県の中心座標とズームレベルを定義（実際の境界に基づいて調整）
 	const prefectureCenterZoom = {
@@ -376,23 +377,24 @@ function init() {
 		console.log('NearestStation markers to add:', data.NearestStation);
 
 		allRows.forEach((row, index) => {
-			// より安全な配列アクセス
+			// より安全な配列アクセス（修正: CSV の列インデックスに合わせる）
 			const id = row[0] || '';
 			const category = row[1] || '';
-			const field_name = row[2] || '';
-			const RegularMeetingCharge = row[3] || '';
-			const CharterCharge = row[4] || '';
-			const lat = row[5] || '';
-			const lon = row[6] || '';
-			const SiteLink = row[7] || '';
-			const BookLink = row[8] || '';
-			const BusBookLink = row[9] || '';
-			const Reading = row[10] || '';
-			const NearestStation = row[11] || '';
-			const OtherInfo = row[12] || '';
-			const lunch = row[13] || '';
-			const num = row[14] || '';
-			const where = row[15] || '';
+			const type = row[2] || '';
+			const field_name = row[3] || '';
+			const RegularMeetingCharge = row[4] || '';
+			const CharterCharge = row[5] || '';
+			const lat = row[6] || '';
+			const lon = row[7] || '';
+			const SiteLink = row[8] || '';
+			const BookLink = row[9] || '';
+			const BusBookLink = row[10] || '';
+			const Reading = row[11] || '';
+			const NearestStation = row[12] || '';
+			const OtherInfo = row[13] || '';
+			const lunch = row[14] || '';
+			const num = row[15] || '';
+			const where = row[16] || '';
 			
 			const latNum = parseFloat(lat), lonNum = parseFloat(lon);
 			if (!lat || !lon || isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
@@ -425,13 +427,13 @@ function init() {
 					if (infoPanel) infoPanel.innerHTML = '';
 					lastClickedMarker = null;
 				} else {
+					// 修正: markerInfoHtml の引数を CSV インデックスに合わせる（type を渡さない）
 					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where);
 					lastClickedMarker = marker;
 				}
 				const leftPanel = document.getElementById('left-panel');
 				if (leftPanel) {
-					leftPanel.classList.remove('closed');
-					document.body.classList.add('panel-open');
+					// 詳細表示のために内容を差し替える（開閉は不要）
 					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where);
 					
 					// スライドショーのイベントリスナーを設定
@@ -481,11 +483,14 @@ function init() {
 						});
 					}
 				}
-				// 追加: マーカークリック時にその位置を中心にズーム20
+				// 追加: マーカークリック時にその位置を中心にズーム17
 				map.flyTo({ center: [lonNum, latNum], zoom: 17 });
 				if (window.innerWidth <= 767) setTimeout(() => map.resize(), 300);
 			});
 		});
+
+		// 追加: マーカー生成後に一度一覧を表示（ジオロケーション応答待ちでも見えるように）
+		showMarkerList(allRows);
 	}
 
 	function markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where) {
@@ -629,7 +634,10 @@ function init() {
 			const row = markerDataList[idx];
 			if (!row) return;
 
-			const [, category, field_name, , , , , , , , , nearestStation] = row;
+			// 修正: CSV の列インデックスに合わせて抽出
+			const category = row[1] || '';
+			const field_name = row[3] || '';
+			const nearestStation = row[12] || '';
 			const prefecture = extractPrefecture(field_name, nearestStation, category);
 			
 			// 展開されている都道府県のマーカーのみ表示
@@ -645,10 +653,12 @@ function init() {
 		// ローディングを非表示にする
 		hideLoading();
 		
-		// 50音順に並べ替え
+		// 50音順に並べ替え（変更: Reading(row[11]) を優先、無ければ field_name(row[3]) を使用）
 		const sortedRows = [...rowsToShow].sort((a, b) => {
-			const hiraA = toHiragana(((a && a[10]) || (a && a[2]) || '').toString().normalize('NFKC'));
-			const hiraB = toHiragana(((b && b[10]) || (b && b[2]) || '').toString().normalize('NFKC'));
+			const keyA = (((a && a[11]) || (a && a[3]) || '')).toString().normalize('NFKC');
+			const keyB = (((b && b[11]) || (b && b[3]) || '')).toString().normalize('NFKC');
+			const hiraA = toHiragana(keyA);
+			const hiraB = toHiragana(keyB);
 			return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
 		});
 		
@@ -659,8 +669,8 @@ function init() {
 			
 			const id = row[0] || '';
 			const category = row[1] || '';
-			const field_name = row[2] || '';
-			const nearestStation = row[11] || '';
+			const field_name = row[3] || '';
+			const nearestStation = row[12] || '';
 			
 			if (!field_name || String(field_name).trim() === '') return;
 			
@@ -670,11 +680,13 @@ function init() {
 			}
 			prefectureGroups[prefecture].push(row);
 		});
-		// 各都道府県グループ内でも50音順に並び替え
+		// 各都道府県グループ内でも50音順に並び替え（Reading を優先）
 		Object.keys(prefectureGroups).forEach(prefecture => {
 			prefectureGroups[prefecture].sort((a, b) => {
-				const hiraA = toHiragana((a[10] || a[2] || '').toString().normalize('NFKC'));
-				const hiraB = toHiragana((b[10] || b[2] || '').toString().normalize('NFKC'));
+				const keyA = (((a && a[11]) || (a && a[3]) || '')).toString().normalize('NFKC');
+				const keyB = (((b && b[11]) || (b && b[3]) || '')).toString().normalize('NFKC');
+				const hiraA = toHiragana(keyA);
+				const hiraB = toHiragana(keyB);
 				return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
 			});
 		});
@@ -703,6 +715,16 @@ function init() {
 			if (!expandedPrefectures.size && prefecture === currentLocationPrefecture) {
 				expandedPrefectures.add(prefecture);
 				isExpanded = true;
+
+				// 追加: 自動展開された場合は、その都道府県の center/zoom に合わせて初期表示を調整
+				const cfg = prefectureCenterZoom[prefecture];
+				if (cfg && map) {
+					map.flyTo({
+						center: cfg.center,
+						zoom: cfg.zoom,
+						duration: 1000
+					});
+				}
 			}
 			
 			const displayStyle = isExpanded ? 'block' : 'none';
@@ -718,7 +740,9 @@ function init() {
 			`;
 			
 			prefectureGroups[prefecture].forEach(row => {
-				const [id, , field_name] = row;
+				// CSV の構成に合わせて正しいインデックスから値を取得
+				const id = row[0] || '';
+				const field_name = row[3] || '';
 				html += `<li><button class="marker-list-btn" data-marker-id="${id}">${field_name}</button></li>`;
 			});
 			
@@ -840,8 +864,76 @@ function init() {
 		}
 	}
 
+	// 追加: type フィルター UI の初期化（スイッチ表示、全表示連動）
+	function initTypeFilterUI() {
+		const container = document.getElementById('type-filter');
+		if (!container) return;
+
+		const allInput = container.querySelector('input[data-type="all"]');
+		const typeInputs = Array.from(container.querySelectorAll('input[type="checkbox"][data-type]'))
+			.filter(i => String(i.getAttribute('data-type')) !== 'all');
+
+		// 初期状態: 全表示スイッチがチェックされていれば個別も全てチェック
+		if (allInput && allInput.checked) {
+			typeInputs.forEach(cb => cb.checked = true);
+		}
+
+		// selectedTypes を初期化
+		selectedTypes.clear();
+		typeInputs.forEach(cb => { if (cb.checked) selectedTypes.add(String(cb.getAttribute('data-type'))); });
+
+		// 全表示スイッチの挙動（オン→すべてオン、オフ→すべてオフ）
+		if (allInput) {
+			allInput.addEventListener('change', () => {
+				const checked = !!allInput.checked;
+				typeInputs.forEach(cb => cb.checked = checked);
+				selectedTypes.clear();
+				if (checked) typeInputs.forEach(cb => selectedTypes.add(String(cb.getAttribute('data-type'))));
+				applyFilters();
+			});
+		}
+
+		// 個別スイッチの挙動（変化時に selectedTypes 更新、全表示スイッチの状態も更新）
+		typeInputs.forEach(cb => {
+			cb.addEventListener('change', () => {
+				// 更新 selectedTypes
+				selectedTypes.clear();
+				typeInputs.forEach(c => { if (c.checked) selectedTypes.add(String(c.getAttribute('data-type'))); });
+
+				// 全選択状態なら全表示をチェック、そうでなければ外す
+				if (allInput) {
+					const allCheckedNow = typeInputs.every(c => c.checked);
+					allInput.checked = allCheckedNow;
+				}
+
+				applyFilters();
+			});
+		});
+	}
+
+	// 追加: row が選択 type を含むか判定（type列は row[2]）
+	function rowHasSelectedType(row) {
+		if (!selectedTypes || selectedTypes.size === 0) return true;
+		const raw = String(row[2] || '');
+		const types = raw.split(/[^0-9]+/).filter(Boolean);
+		return types.some(t => selectedTypes.has(t));
+	}
+
 	function applyFilters() {
 		const keyword = currentKeyword.trim().toLowerCase();
+
+		// 追加: DOM 上の type チェックボックスの状態を直接取得（常に最新状態を反映）
+		const typeContainer = document.getElementById('type-filter');
+		let selectedTypesLive = null;
+		let allChecked = true;
+		if (typeContainer) {
+			const allInput = typeContainer.querySelector('input[data-type="all"]');
+			const typeInputs = Array.from(typeContainer.querySelectorAll('input[type="checkbox"][data-type]'))
+				.filter(i => String(i.getAttribute('data-type')) !== 'all');
+			selectedTypesLive = new Set(typeInputs.filter(i => i.checked).map(i => String(i.getAttribute('data-type'))));
+			allChecked = !!(allInput && allInput.checked);
+		}
+
 		let filteredRows = allRows;
 		if (keyword) {
 			const keywordHira = toHiragana(keyword);
@@ -858,8 +950,8 @@ function init() {
 			filteredRows = filteredRows.filter(row => {
 				if (!row || !Array.isArray(row)) return false;
 				
-				const fieldName = (row[2] || '');
-				const reading = (row[10] || '');
+				const fieldName = (row[3] || '');
+				const reading = (row[11] || '');
 				const fieldNameLower = fieldName.toLowerCase();
 				const readingLower = reading.toLowerCase();
 				const fieldNameHira = toHiragana(fieldNameLower);
@@ -906,9 +998,23 @@ function init() {
 				);
 			});
 		}
+
+		// 変更: type フィルタを DOM の現在状態(selectedTypesLive)に基づいて適用
+		if (selectedTypesLive && !allChecked) {
+			filteredRows = filteredRows.filter(row => {
+				if (!row || !Array.isArray(row)) return false;
+				const raw = String(row[2] || '');
+				const types = raw.split(/[^0-9]+/).filter(Boolean);
+				return types.some(t => selectedTypesLive.has(t));
+			});
+		}
+
 		rows = filteredRows;
-		
-		// フィルタ適用時もトグル状態を考慮
+
+		// 左リストを type フィルタ後の行で再描画
+		showMarkerList(filteredRows);
+
+		// マーカー表示更新：既存のトグル状態と絞込結果に基づく
 		const filteredIds = new Set(filteredRows.map(row => row && row[0]).filter(id => id));
 		markers.forEach((marker, idx) => {
 			if (!marker) return;
@@ -916,15 +1022,14 @@ function init() {
 			if (!row || !Array.isArray(row)) return;
 
 			const category = row[1] || '';
-			const field_name = row[2] || '';
-			const nearestStation = row[11] || '';
+			const field_name = row[3] || '';
+			const nearestStation = row[12] || '';
 			const prefecture = extractPrefecture(field_name, nearestStation, category);
-			
-			// フィルタ条件とトグル状態の両方を満たす場合のみ表示
+
 			const matchesFilter = filteredIds.has(row[0]);
 			const isToggleExpanded = expandedPrefectures.has(prefecture);
 			const isVisible = matchesFilter && isToggleExpanded;
-			
+
 			marker.getElement().style.display = isVisible ? '' : 'none';
 		});
 	}
@@ -974,19 +1079,16 @@ function init() {
 		
 		let currentIndex = parseInt(currentSpan.textContent) || 1;
 		let newIndex = currentIndex + direction;
-		
-		// ループ処理
+
 		if (newIndex > totalSlides) {
 			newIndex = 1;
 		} else if (newIndex < 1) {
 			newIndex = totalSlides;
 		}
-		
-		// 画像を切り替え
+
 		imgElement.src = `images/${id}-${newIndex}.jpg`;
 		currentSpan.textContent = newIndex;
-		
-		// 画像拡大機能のリスナーを再設定
+
 		setupImageExpandListeners();
 		
 		console.log(`Slide changed for ${id}: ${currentIndex} -> ${newIndex}`);
@@ -994,13 +1096,11 @@ function init() {
 
 	// 画像拡大表示のイベントリスナーを設定する関数
 	function setupImageExpandListeners() {
-		// 既存のリスナーを削除（重複防止）
 		document.querySelectorAll('.expandable-image').forEach(img => {
 			const newImg = img.cloneNode(true);
 			img.parentNode.replaceChild(newImg, img);
 		});
-		
-		// 新しいリスナーを設定
+
 		document.querySelectorAll('.expandable-image').forEach(img => {
 			img.addEventListener('click', function(e) {
 				e.preventDefault();
@@ -1096,38 +1196,6 @@ function init() {
 			}
 		}, { passive: true });
 		
-		// マウスイベント（デスクトップ用）
-// 		let isDragging = false;
-// 		let startMouseX = 0;
-		
-// 		modal.addEventListener('mousedown', function(e) {
-// 			isDragging = true;
-// 			startMouseX = e.clientX;
-// 		});
-		
-// 		modal.addEventListener('mousemove', function(e) {
-// 			if (!isDragging) return;
-// 			e.preventDefault();
-// 		});
-		
-// 		modal.addEventListener('mouseup', function(e) {
-// 			if (!isDragging) return;
-// 			isDragging = false;
-			
-// 			const diffX = startMouseX - e.clientX;
-			
-// 			// 50px以上のドラッグで反応
-// 			if (Math.abs(diffX) > 50) {
-// 				if (diffX > 0) {
-// 					// 左ドラッグ（次の画像）
-// 					changeExpandedSlide(1);
-// 				} else {
-// 					// 右ドラッグ（前の画像）
-// 					changeExpandedSlide(-1);
-// 				}
-// 			}
-// 		});
-		
 		// キーボードイベント（矢印キー）
 		const handleKeyPress = (e) => {
 			if (e.key === 'Escape') {
@@ -1185,9 +1253,65 @@ function init() {
 		});
 	}
 
-	const element = document.getElementById('info');
-	if (element) {
-		element.innerHTML = '';
-		element.style.marginTop = '20px';
-	}
+	// 追加: type フィルター UI を初期化（DOM にチェックボックスがある前提）
+	initTypeFilterUI();
+
+	// 追加: モバイル用の絞り込みトグルボタンの挙動
+	(function setupFilterToggle() {
+		const filterBtn = document.getElementById('filter-toggle-btn');
+		const typeFilter = document.getElementById('type-filter');
+		if (!filterBtn || !typeFilter) return;
+
+		// トグルクリックで表示/非表示
+		filterBtn.addEventListener('click', () => {
+			const isCollapsed = typeFilter.classList.toggle('collapsed');
+			filterBtn.setAttribute('aria-expanded', String(!isCollapsed));
+		});
+
+		// リサイズ時の既定表示制御（スマホ幅では折りたたむ）
+		function updateFilterByWidth() {
+			if (window.innerWidth <= 767) {
+				// モバイル時は初期で折りたたむ（ユーザー操作で開閉可能）
+				if (!typeFilter.classList.contains('collapsed')) {
+					typeFilter.classList.add('collapsed');
+					filterBtn.setAttribute('aria-expanded', 'false');
+				}
+				filterBtn.style.display = 'block';
+			} else {
+				// デスクトップでは常に表示
+				typeFilter.classList.remove('collapsed');
+				filterBtn.style.display = 'none';
+				filterBtn.setAttribute('aria-expanded', 'true');
+			}
+		}
+
+		// 初期化およびイベント登録
+		updateFilterByWidth();
+		window.addEventListener('resize', updateFilterByWidth);
+
+		// 追加: DOM/CSS の競合で collapsed が反映されない場合に備え、style.display を直接操作して確実に非表示にするフォールバックを導入
+		// （class 切替後に display が残るブラウザや inline style が優先されるケースをカバー）
+		const applyCollapsedVisibility = () => {
+			if (typeFilter.classList.contains('collapsed')) {
+				typeFilter.style.display = 'none';
+			} else {
+				// remove inline override to let stylesheet control layout
+				typeFilter.style.display = '';
+			}
+		};
+		// 初回適用
+		applyCollapsedVisibility();
+		// class が変わったときに確実に反映する監視
+		const observer = new MutationObserver(mutations => {
+			for (const m of mutations) {
+				if (m.attributeName === 'class') {
+					applyCollapsedVisibility();
+				}
+			}
+		});
+		observer.observe(typeFilter, { attributes: true });
+
+		// 破棄はしない（ページライフタイム中は監視を維持）
+	})();
+
 }

@@ -21,9 +21,24 @@
 		</div>
 		<div id="info"></div>
 	</div>
-	<div id="right-panel">
+	<div id="right-panel" style="position:relative;">
 		<div id="map"></div>
-		<input type="text" id="marker-search" placeholder="名前から検索">
+		<button id="filter-toggle-btn" aria-controls="type-filter" aria-expanded="false">Filter</button>
+		<div id="type-filter" class="type-filter type-filter-panel">
+			<span class="type-label">field type:</span>
+			
+			<div class="type-item"><label class="switch"><input type="checkbox" data-type="all" checked><span class="slider"></span></label><span class="type-label">Show all</span></div>
+			<div class="type-item"><label class="switch"><input type="checkbox" data-type="0" checked><span class="slider"></span></label><span>indoor</span></div>
+			<div class="type-item"><label class="switch"><input type="checkbox" data-type="1" checked><span class="slider"></span></label><span>outdoor</span></div>
+			<div class="type-item"><label class="switch"><input type="checkbox" data-type="2" checked><span class="slider"></span></label><span>CQB</span></div>
+			<div class="type-item"><label class="switch"><input type="checkbox" data-type="3" checked><span class="slider"></span></label><span>forest</span></div>
+			<div class="type-item"><label class="switch"><input type="checkbox" data-type="4" checked><span class="slider"></span></label><span>urban</span></div>
+			<div class="type-item"><label class="switch"><input type="checkbox" data-type="5" checked><span class="slider"></span></label><span>multi</span></div>
+			<div class="type-item"><label class="switch"><input type="checkbox" data-type="6" checked><span class="slider"></span></label><span>flat</span></div>
+			<div class="type-item"><label class="switch"><input type="checkbox" data-type="7" checked><span class="slider"></span></label><span>wilderness</span></div>
+		</div>
+		<input type="text" id="marker-search" class="marker-search" placeholder="名前から検索" />
+
 	</div>
 	<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
 	<script src="map.js"></script>
