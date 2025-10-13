@@ -213,6 +213,66 @@ body {
 	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 	width: 140px;
 }
+
+/* モバイル用 Options トグル（左上、デスクトップでは非表示） */
+#options-toggle-mobile {
+    display: none; /* デフォルトは非表示（デスクトップ） */
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10005;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* options パネル（左上） */
+.options-filter-panel{
+    position:absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 9999;
+    background: #fff;
+    padding: 8px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    width: 200px;
+}
+
+/* 折りたたみ用クラス（非表示） */
+.options-filter-panel.collapsed { display: none !important; }
+
+/* options 内の検索入力を見やすく調整（panel 内では静的配置） */
+.options-filter-panel .marker-search {
+    position: static !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    margin: 12px 0 8px 0 !important;
+    box-sizing: border-box;
+    padding: 6px 8px;
+}
+
+/* 追加: 昼食フィルタパネル（type-filter-panel と同等のスタイル） */
+/*.lunch-filter-panel {
+	position: absolute;
+	top: 10px;
+	right: 160px;/z-index: 9999;
+	background: #fff;
+	padding: 8px;
+	border-radius: 6px;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+	width: 160px;
+}*/
+
+/* モバイル時の位置調整（既存の media query と併用） */
+/*@media (max-width: 767px) {.lunch-filter-panel {position: absolute !important;top: 10px !important;right: 15px !important;width: 140px !important;height: auto;}}
+
 /* 縦並び、左揃え */
 .type-filter { font-size:12px; display:flex; flex-direction:column; align-items:flex-start; gap:8px; flex-wrap:nowrap; }
 /* スイッチ（トグル） */
@@ -251,6 +311,7 @@ body {
 	border-radius: 6px;
 	font-size: 13px;
 }
+
 /* collapsed クラスは常に優先で非表示 */
 #type-filter.collapsed { display: none !important; }
 
@@ -495,8 +556,8 @@ body {
     .next-btn { right: 5px; }
     /* モーダル調整 */
     .close-modal {
-        top: 15px;
-        right: 15px;
+        top: 50px;
+        left: 8px;
         font-size: 30px;
         width: 40px;
         height: 40px;
@@ -537,6 +598,7 @@ body {
     /* 折りたたみ用ボタン表示 */
     #filter-toggle-btn { display: block; }
 }
+
 /* 小さなスクリーン向けの調整 */
 @media (max-width: 480px) {
     .prev-btn, .next-btn {
@@ -544,4 +606,45 @@ body {
         height: 30px;
         font-size: 14px;
     }
+}
+
+/* 変更: .lunch-filter-panel を type パネル内に統合して表示されるように変更 */
+.lunch-filter-panel {
+	/* 絶対配置を解除し、type-filter 内に馴染むようにする */
+	position: static;
+	top: auto;
+	right: auto;
+	z-index: 9999;
+	background: transparent;
+	padding: 0;
+	border-radius: 6px;
+	box-shadow: none;
+	width: auto;
+	margin-top: 8px;
+}
+
+/* モバイル時の調整（以前の絶対指定を無効化） */
+@media (max-width: 767px) {
+	.lunch-filter-panel {
+		position: static !important;
+		top: auto !important;
+		right: auto !important;
+		width: auto !important;
+		height: auto;
+		display: block;
+	}
+}
+
+/* 追加: options パネル内の検索欄が絶対配置に上書きされる問題を修正 */
+@media (max-width: 767px) {
+	.options-filter-panel .marker-search {
+		position: static !important;
+		top: auto !important;
+		left: auto !important;
+		right: auto !important;
+		transform: none !important;
+		width: calc(100% - 0px) !important;
+		margin: 12px 0 8px 0 !important; /* モバイルでも上余白を付与 */
+		box-sizing: border-box !important;
+	}
 }

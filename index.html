@@ -22,26 +22,34 @@
 		<div id="info"></div>
 	</div>
 	<div id="right-panel" style="position:relative;">
+		<button id="options-toggle-mobile" aria-controls="options-filter" aria-expanded="false">Options</button>
 		<div id="map"></div>
-		<button id="filter-toggle-btn" aria-controls="type-filter" aria-expanded="false">Filter</button>
-		<div id="type-filter" class="type-filter type-filter-panel">
-			<span class="type-label">field type:</span>
+ 		<button id="filter-toggle-btn" aria-controls="type-filter" aria-expanded="false">Filter</button>
+ 		<div id="type-filter" class="type-filter type-filter-panel">
+ 			<span class="type-label">field type:</span>
 			
-			<div class="type-item"><label class="switch"><input type="checkbox" data-type="all" checked><span class="slider"></span></label><span class="type-label">Show all</span></div>
-			<div class="type-item"><label class="switch"><input type="checkbox" data-type="0" checked><span class="slider"></span></label><span>indoor</span></div>
-			<div class="type-item"><label class="switch"><input type="checkbox" data-type="1" checked><span class="slider"></span></label><span>outdoor</span></div>
-			<div class="type-item"><label class="switch"><input type="checkbox" data-type="2" checked><span class="slider"></span></label><span>CQB</span></div>
-			<div class="type-item"><label class="switch"><input type="checkbox" data-type="3" checked><span class="slider"></span></label><span>forest</span></div>
-			<div class="type-item"><label class="switch"><input type="checkbox" data-type="4" checked><span class="slider"></span></label><span>urban</span></div>
-			<div class="type-item"><label class="switch"><input type="checkbox" data-type="5" checked><span class="slider"></span></label><span>multi</span></div>
-			<div class="type-item"><label class="switch"><input type="checkbox" data-type="6" checked><span class="slider"></span></label><span>flat</span></div>
-			<div class="type-item"><label class="switch"><input type="checkbox" data-type="7" checked><span class="slider"></span></label><span>wilderness</span></div>
-		</div>
-		<input type="text" id="marker-search" class="marker-search" placeholder="名前から検索" />
-
-	</div>
-	<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
-	<script src="map.js"></script>
-	<script src="getdata.js"></script>
+ 			<div class="type-item"><label class="switch"><input type="checkbox" data-type="all" checked><span class="slider"></span></label><span class="type-label">全表示</span></div>
+ 			<div class="type-item"><label class="switch"><input type="checkbox" data-type="0" checked><span class="slider"></span></label><span>インドア</span></div>
+ 			<div class="type-item"><label class="switch"><input type="checkbox" data-type="1" checked><span class="slider"></span></label><span>アウトドア</span></div>
+ 			<div class="type-item"><label class="switch"><input type="checkbox" data-type="2" checked><span class="slider"></span></label><span>CQB</span></div>
+ 			<div class="type-item"><label class="switch"><input type="checkbox" data-type="3" checked><span class="slider"></span></label><span>森林</span></div>
+ 			<div class="type-item"><label class="switch"><input type="checkbox" data-type="4" checked><span class="slider"></span></label><span>市街地</span></div>
+ 			<div class="type-item"><label class="switch"><input type="checkbox" data-type="5" checked><span class="slider"></span></label><span>複合型</span></div>
+ 			<div class="type-item"><label class="switch"><input type="checkbox" data-type="6" checked><span class="slider"></span></label><span>平地</span></div>
+ 			<div class="type-item"><label class="switch"><input type="checkbox" data-type="7" checked><span class="slider"></span></label><span>荒野</span></div>
+ 		</div>
+ 
+ 		<!-- options パネル（左上、ボタンの下に表示） -->
+ 		<div id="options-filter" class="options-filter-panel">
+ 			<span class="option-label">options</span>
+ 			<input type="text" id="marker-search" class="marker-search" placeholder="名前から検索" />
+ 			<div class="option-item" style="margin-top:6px;"><label class="switch"><input type="checkbox" id="lunch-toggle" /><span class="slider"></span></label><span class="option-label">昼食ありのみ</span></div>
+ 			<div class="option-item" style="margin-top:4px;"><label class="switch"><input type="checkbox" id="bus-toggle" /><span class="slider"></span></label><span class="option-label">送迎バスありのみ</span></div>
+ 		</div>
+ 
+ 	</div>
+ 	<script src="https://unpkg.com/maplibre-gl@2.4.0/dist/maplibre-gl.js"></script>
+ 	<script src="map.js"></script>
+ 	<script src="getdata.js"></script>
 </body>
 </html>

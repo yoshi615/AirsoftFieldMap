@@ -37,6 +37,8 @@ function init() {
 	let currentLocationPrefecture = null; // 現在地の都道府県を保持
 	let expandedPrefectures = new Set(); // 展開中の都道府県を管理
 	let selectedTypes = new Set(); // 追加: 選択されている type 値（文字列）
+	let lunchOnly = false; // 追加: 昼食ありのみフィルタ状態
+	let busOnly = false; // 追加: 送迎バスありのみフィルタ状態
 
 	// 47都道府県の中心座標とズームレベルを定義（実際の境界に基づいて調整）
 	const prefectureCenterZoom = {
@@ -1022,6 +1024,34 @@ function init() {
 			});
 		}
 
+		// 追加: 昼食フィルタを適用（row[14] が空でないもののみ残す）
+		if (lunchOnly) {
+			filteredRows = filteredRows.filter(row => {
+				if (!row || !Array.isArray(row)) return false;
+				const lunchVal = String(row[14] || '').trim();
+				return lunchVal !== '';
+			});
+		}
+
+		// 追加: 送迎バスフィルタを適用（has_bus が 1 または true のもののみ残す）
+		if (busOnly) {
+			filteredRows = filteredRows.filter(row => {
+				if (!row || !Array.isArray(row)) return false;
+				// CSV の列位置は環境で変わる可能性があるためフォールバックで複数インデックスをチェック
+				const candidates = [17, 18, 19, 20]; // has_bus を想定する後続インデックス候補
+				for (const idx of candidates) {
+					if (typeof row[idx] !== 'undefined') {
+						const v = String(row[idx] || '').trim().toLowerCase();
+						if (v === '1' || v === 'true' || v === 'yes' || v === '有' || v === 'あり') return true;
+						// 値が空なら次の候補をチェック
+						if (v !== '') return false; // 明示的に 0/false/無 の場合は除外
+					}
+				}
+				// 最終フォールバック: 該当列が無ければ false（バス情報が無いと判断）
+				return false;
+			});
+		}
+
 		rows = filteredRows;
 
 		// 左リストを type フィルタ後の行で再描画
@@ -1044,6 +1074,16 @@ function init() {
 			const isVisible = matchesFilter && isToggleExpanded;
 
 			marker.getElement().style.display = isVisible ? '' : 'none';
+		});
+	}
+	// 追加: 送迎バスフィルタ UI 初期化
+	function initBusFilterUI() {
+		const busToggle = document.getElementById('bus-toggle');
+		if (!busToggle) return;
+		busOnly = !!busToggle.checked;
+		busToggle.addEventListener('change', () => {
+			busOnly = !!busToggle.checked;
+			applyFilters();
 		});
 	}
 
@@ -1269,6 +1309,21 @@ function init() {
 	// 追加: type フィルター UI を初期化（DOM にチェックボックスがある前提）
 	initTypeFilterUI();
 
+	// 追加: 昼食フィルタ UI 初期化
+	function initLunchFilterUI() {
+		const lunchToggle = document.getElementById('lunch-toggle');
+		if (!lunchToggle) return;
+		// 初期値: オフ
+		lunchOnly = !!lunchToggle.checked;
+		lunchToggle.addEventListener('change', () => {
+			lunchOnly = !!lunchToggle.checked;
+			// フィルタ適用（type/keyword の現在状態に基づく）
+			applyFilters();
+		});
+	}
+	initLunchFilterUI();
+	initBusFilterUI();
+
 	// 追加: モバイル用の絞り込みトグルボタンの挙動
 	(function setupFilterToggle() {
 		const filterBtn = document.getElementById('filter-toggle-btn');
@@ -1295,6 +1350,7 @@ function init() {
 				typeFilter.classList.remove('collapsed');
 				filterBtn.style.display = 'none';
 				filterBtn.setAttribute('aria-expanded', 'true');
+				typeFilter.style.display = ''; // style reset
 			}
 		}
 
@@ -1326,5 +1382,43 @@ function init() {
 
 		// 破棄はしない（ページライフタイム中は監視を維持）
 	})();
+	
+	// 追加: モバイル用 options ボタンのセットアップ
+	(function setupOptionsMobileToggle() {
+		const btn = document.getElementById('options-toggle-mobile');
+		const panel = document.getElementById('options-filter');
+		if (!btn || !panel) return;
 
+		// クリックで表示/非表示をトグル
+		btn.addEventListener('click', () => {
+			const isCollapsed = panel.classList.toggle('collapsed');
+			btn.setAttribute('aria-expanded', String(!isCollapsed));
+		});
+
+		// 初期表示: 画面幅がモバイルなら折りたたんでおく（必要なら変更）
+		function updateByWidth() {
+			if (window.innerWidth <= 767) {
+				if (!panel.classList.contains('collapsed')) panel.classList.add('collapsed');
+				btn.style.display = 'block';
+				btn.setAttribute('aria-expanded', 'false');
+			} else {
+				// デスクトップでは常に表示
+				panel.classList.remove('collapsed');
+				btn.style.display = 'none';
+				btn.setAttribute('aria-expanded', 'true');
+				panel.style.display = ''; // style reset
+			}
+		}
+		updateByWidth();
+		window.addEventListener('resize', updateByWidth);
+
+		// 競合回避: class 変更時に display を反映
+		const applyCollapsedVisibility = () => {
+			if (panel.classList.contains('collapsed')) panel.style.display = 'none';
+			else panel.style.display = '';
+		};
+		applyCollapsedVisibility();
+		const mo = new MutationObserver(() => applyCollapsedVisibility());
+		mo.observe(panel, { attributes: true });
+	})();
 }
