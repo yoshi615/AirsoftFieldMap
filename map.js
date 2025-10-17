@@ -937,7 +937,7 @@ function init() {
 	function applyFilters() {
 		const keyword = currentKeyword.trim().toLowerCase();
 
-		// 追加: DOM 上の type チェックボックスの状態を直接取得（常に最新状態を反映）
+		// 取得: DOM 上の type チェックボックスの状態を常に最新で反映
 		const typeContainer = document.getElementById('type-filter');
 		let selectedTypesLive = null;
 		let allChecked = true;
@@ -949,7 +949,13 @@ function init() {
 			allChecked = !!(allInput && allInput.checked);
 		}
 
+		// 優先タイプの状態
+		const indoorDisabled = !!(selectedTypesLive && !selectedTypesLive.has('0'));
+		const outdoorDisabled = !!(selectedTypesLive && !selectedTypesLive.has('1'));
+
 		let filteredRows = allRows;
+
+		// キーワード絞り込み（既存のロジックをそのまま使用）
 		if (keyword) {
 			const keywordHira = toHiragana(keyword);
 			const keywordKana = toKatakana(keyword);
@@ -1014,12 +1020,27 @@ function init() {
 			});
 		}
 
-		// 変更: type フィルタを DOM の現在状態(selectedTypesLive)に基づいて適用
+		// 統一: type フィルタ（インドア/アウトドア優先ルールを含む）
 		if (selectedTypesLive && !allChecked) {
 			filteredRows = filteredRows.filter(row => {
 				if (!row || !Array.isArray(row)) return false;
 				const raw = String(row[2] || '');
 				const types = raw.split(/[^0-9]+/).filter(Boolean);
+				const has0 = types.includes('0');
+				const has1 = types.includes('1');
+
+				// 両方オフなら 0 または 1 を含む行は即座に除外
+				if (indoorDisabled && outdoorDisabled) {
+					if (has0 || has1) return false;
+				} else if (indoorDisabled && !outdoorDisabled) {
+					// インドアのみオフ：インドアを含みアウトドアを含まない行は優先的に除外
+					if (has0 && !has1) return false;
+				} else if (outdoorDisabled && !indoorDisabled) {
+					// アウトドアのみオフ：アウトドアを含みインドアを含まない行は優先的に除外
+					if (has1 && !has0) return false;
+				}
+
+				// 最終判定: 少なくとも選択された type のいずれかを持つこと
 				return types.some(t => selectedTypesLive.has(t));
 			});
 		}
@@ -1037,17 +1058,14 @@ function init() {
 		if (busOnly) {
 			filteredRows = filteredRows.filter(row => {
 				if (!row || !Array.isArray(row)) return false;
-				// CSV の列位置は環境で変わる可能性があるためフォールバックで複数インデックスをチェック
-				const candidates = [17, 18, 19, 20]; // has_bus を想定する後続インデックス候補
+				const candidates = [17, 18, 19, 20];
 				for (const idx of candidates) {
 					if (typeof row[idx] !== 'undefined') {
 						const v = String(row[idx] || '').trim().toLowerCase();
 						if (v === '1' || v === 'true' || v === 'yes' || v === '有' || v === 'あり') return true;
-						// 値が空なら次の候補をチェック
-						if (v !== '') return false; // 明示的に 0/false/無 の場合は除外
+						if (v !== '') return false;
 					}
 				}
-				// 最終フォールバック: 該当列が無ければ false（バス情報が無いと判断）
 				return false;
 			});
 		}
