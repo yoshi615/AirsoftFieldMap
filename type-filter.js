@@ -7,6 +7,9 @@ class TypeFilter {
 		this.allRows = null;
 		this.autoDisabledByIndoor = new Set();
 		this.autoDisabledByOutdoor = new Set();
+		this.minDistance = 0;
+		this.maxDistance = 200;
+		this.currentMaxDistance = 200;
 	}
 
 	initTypeFilterUI() {
@@ -231,7 +234,6 @@ class TypeFilter {
 	}
 
 	applyFilters(allRows, toHiragana, toKatakana, toRomaji, toKatakanaFromAlphabet, normalizeText) {
-		// 全データを保存（初回のみ）
 		if (!this.allRows) {
 			this.allRows = allRows;
 		}
