@@ -333,7 +333,7 @@ class TypeFilter {
 				if (!has0Selected && !has1Selected) {
 					if (has0 || has1) return false;
 					return types.some(t => selectedTypesLive.has(t));
-				}合
+				}
 				if (has0Selected && !has1Selected) {
 					if (!has0) return false;
 					if (selectedFine.length > 0) {
