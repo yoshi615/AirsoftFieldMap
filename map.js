@@ -1,6 +1,5 @@
 let map;
 
-// ひらがな・カタカナ・ローマ字変換
 function toHiragana(str) {
 	return str.replace(/[\u30a1-\u30f6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
 }
@@ -31,68 +30,19 @@ function init() {
 	let lastClickedMarker = null;
 	let markers = [], markerDataList = [];
 	let rows = data.FieldList, allRows = data.FieldList;
-	let currentKeyword = '';
 	let lastActiveMarkerIndex = null;
-	let currentLocationMarker = null; // 現在地マーカーを保持する変数
-	let currentLocationPrefecture = null; // 現在地の都道府県を保持
-	let expandedPrefectures = new Set(); // 展開中の都道府県を管理
-	let selectedTypes = new Set(); // 追加: 選択されている type 値（文字列）
-	let lunchOnly = false; // 追加: 昼食ありのみフィルタ状態
-	let busOnly = false; // 追加: 送迎バスありのみフィルタ状態
-
-	// 47都道府県の中心座標とズームレベルを定義（実際の境界に基づいて調整）
+	let currentLocationMarker = null;
+	let currentLocationPrefecture = null;
+	let expandedPrefectures = new Set();
+	
+	// TypeFilterクラスのインスタンス作成
+	const typeFilter = new TypeFilter();
+	
 	const prefectureCenterZoom = {
-		'北海道': { center: [143.2141, 43.0642], zoom: 5.5 },
-		'青森': { center: [140.7402, 40.8244], zoom: 7.5 },
-		'岩手': { center: [141.1527, 39.7036], zoom: 7.0 },
-		'宮城': { center: [140.8719, 38.2682], zoom: 8.0 },
-		'秋田': { center: [140.1024, 39.7186], zoom: 7.5 },
-		'山形': { center: [140.3633, 38.2404], zoom: 8.0 },
-		'福島': { center: [140.4677, 37.7500], zoom: 7.5 },
-		'茨城': { center: [140.4467, 36.3414], zoom: 8.0 },
-		'栃木': { center: [139.8837, 36.5658], zoom: 8.5 },
-		'群馬': { center: [139.0608, 36.3911], zoom: 8.5 },
-		'埼玉': { center: [139.6489, 35.8617], zoom: 9.0 },
-		'千葉': { center: [140.1233, 35.6049], zoom: 8.5 },
-		'東京': { center: [139.6917, 35.6895], zoom: 9.5 },
-		'神奈川': { center: [139.6425, 35.4478], zoom: 9.0 },
-		'新潟': { center: [139.0235, 37.9026], zoom: 7.0 },
-		'富山': { center: [137.2114, 36.6959], zoom: 8.5 },
-		'石川': { center: [136.6256, 36.5944], zoom: 8.0 },
-		'福井': { center: [136.2217, 35.9432], zoom: 8.5 },
-		'山梨': { center: [138.5684, 35.6642], zoom: 8.5 },
-		'長野': { center: [138.1811, 36.2048], zoom: 7.5 },
-		'岐阜': { center: [137.2110, 35.3912], zoom: 7.5 },
-		'静岡': { center: [138.3833, 34.9769], zoom: 8.0 },
-		'愛知': { center: [137.1805, 35.1803], zoom: 8.5 },
-		'三重': { center: [136.5086, 34.7302], zoom: 8.0 },
-		'滋賀': { center: [136.1018, 35.0045], zoom: 9.0 },
-		'京都': { center: [135.7681, 35.0116], zoom: 8.5 },
-		'大阪': { center: [135.5200, 34.6937], zoom: 9.5 },
-		'兵庫': { center: [134.6900, 34.6913], zoom: 8.0 },
-		'奈良': { center: [135.8327, 34.6851], zoom: 9.0 },
-		'和歌山': { center: [135.1675, 34.2261], zoom: 8.0 },
-		'鳥取': { center: [134.2324, 35.5038], zoom: 8.5 },
-		'島根': { center: [132.5564, 35.4725], zoom: 7.5 },
-		'岡山': { center: [133.9348, 34.6617], zoom: 8.5 },
-		'広島': { center: [132.4596, 34.3963], zoom: 8.0 },
-		'山口': { center: [131.4706, 34.3859], zoom: 7.5 },
-		'徳島': { center: [134.5593, 34.0658], zoom: 8.5 },
-		'香川': { center: [134.0434, 34.3401], zoom: 9.5 },
-		'愛媛': { center: [132.7661, 33.8416], zoom: 8.0 },
-		'高知': { center: [133.5311, 33.5597], zoom: 7.5 },
-		'福岡': { center: [130.4017, 33.6064], zoom: 8.5 },
-		'佐賀': { center: [130.2985, 33.2494], zoom: 9.0 },
-		'長崎': { center: [129.8737, 32.7503], zoom: 7.5 },
-		'熊本': { center: [130.7417, 32.7898], zoom: 8.0 },
-		'大分': { center: [131.6127, 33.2382], zoom: 8.0 },
-		'宮崎': { center: [131.4214, 32.0106], zoom: 8.0 },
-		'鹿児島': { center: [130.5581, 31.5602], zoom: 7.0 },
-		'沖縄': { center: [127.6792, 26.2124], zoom: 7.0 },
+		'北海道': { center: [143.2141, 43.0642], zoom: 5.5 },'青森': { center: [140.7402, 40.8244], zoom: 7.5 },'岩手': { center: [141.1527, 39.7036], zoom: 7.0 },'宮城': { center: [140.8719, 38.2682], zoom: 8.0 },'秋田': { center: [140.1024, 39.7186], zoom: 7.5 },'山形': { center: [140.3633, 38.2404], zoom: 8.0 },'福島': { center: [140.4677, 37.7500], zoom: 7.5 },'茨城': { center: [140.4467, 36.3414], zoom: 8.0 },'栃木': { center: [139.8837, 36.5658], zoom: 8.5 },'群馬': { center: [139.0608, 36.3911], zoom: 8.5 },'埼玉': { center: [139.6489, 35.8617], zoom: 9.0 },'千葉': { center: [140.1233, 35.6049], zoom: 8.5 },'東京': { center: [139.6917, 35.6895], zoom: 9.5 },'神奈川': { center: [139.6425, 35.4478], zoom: 9.0 },'新潟': { center: [139.0235, 37.9026], zoom: 7.0 },'富山': { center: [137.2114, 36.6959], zoom: 8.5 },'石川': { center: [136.6256, 36.5944], zoom: 8.0 },'福井': { center: [136.2217, 35.9432], zoom: 8.5 },'山梨': { center: [138.5684, 35.6642], zoom: 8.5 },'長野': { center: [138.1811, 36.2048], zoom: 7.5 },'岐阜': { center: [137.2110, 35.3912], zoom: 7.5 },'静岡': { center: [138.3833, 34.9769], zoom: 8.0 },'愛知': { center: [137.1805, 35.1803], zoom: 8.5 },'三重': { center: [136.5086, 34.7302], zoom: 8.0 },'滋賀': { center: [136.1018, 35.0045], zoom: 9.0 },'京都': { center: [135.7681, 35.0116], zoom: 8.5 },'大阪': { center: [135.5200, 34.6937], zoom: 9.5 },'兵庫': { center: [134.6900, 34.6913], zoom: 8.0 },'奈良': { center: [135.8327, 34.6851], zoom: 9.0 },'和歌山': { center: [135.1675, 34.2261], zoom: 8.0 },'鳥取': { center: [134.2324, 35.5038], zoom: 8.5 },'島根': { center: [132.5564, 35.4725], zoom: 7.5 },'岡山': { center: [133.9348, 34.6617], zoom: 8.5 },'広島': { center: [132.4596, 34.3963], zoom: 8.0 },'山口': { center: [131.4706, 34.3859], zoom: 7.5 },'徳島': { center: [134.5593, 34.0658], zoom: 8.5 },'香川': { center: [134.0434, 34.3401], zoom: 9.5 },'愛媛': { center: [132.7661, 33.8416], zoom: 8.0 },'高知': { center: [133.5311, 33.5597], zoom: 7.5 },'福岡': { center: [130.4017, 33.6064], zoom: 8.5 },'佐賀': { center: [130.2985, 33.2494], zoom: 9.0 },'長崎': { center: [129.8737, 32.7503], zoom: 7.5 },'熊本': { center: [130.7417, 32.7898], zoom: 8.0 },'大分': { center: [131.6127, 33.2382], zoom: 8.0 },'宮崎': { center: [131.4214, 32.0106], zoom: 8.0 },'鹿児島': { center: [130.5581, 31.5602], zoom: 7.0 },'沖縄': { center: [127.6792, 26.2124], zoom: 7.0 },
 		'その他': { center: [139.98886293394258, 35.853556991089334], zoom: 8.7 }
 	};
 
-	// ローディング表示/非表示の関数を追加
 	function showLoading() {
 		const loadingContainer = document.getElementById('loading-container');
 		if (loadingContainer) {
@@ -107,7 +57,6 @@ function init() {
 		}
 	}
 
-	// 初期状態でローディングを表示
 	showLoading();
 
 	initMap();
@@ -116,7 +65,6 @@ function init() {
 		let latSum = 0, lonSum = 0, validPoints = 0;
 		let bounds = new maplibregl.LngLatBounds();
 
-		// allRowsを使用して全データから座標を取得
 		allRows.forEach(row => {
 			const [, , , , lat, lon] = row;
 			const latNum = parseFloat(lat), lonNum = parseFloat(lon);
@@ -125,11 +73,9 @@ function init() {
 			}
 		});
 
-		// 座標データの平均値をcenter座標として設定
-		let center = [139.98886293394258, 35.853556991089334]; // フォールバック座標
+		let center = [139.98886293394258, 35.853556991089334];
 		let zoom = 8.7;
 
-		// 有効なポイントがある場合は平均値を計算
 		if (validPoints > 0) {
 			center = [lonSum / validPoints, latSum / validPoints];
 		}
@@ -141,20 +87,14 @@ function init() {
 			zoom: zoom,
 		});
 
-		// 都道府県境界データを追加する関数
 		async function addPrefectureBoundaries() {
 			try {
-				// 都道府県境界のGeoJSONデータを取得
 				const response = await fetch('https://raw.githubusercontent.com/dataofjapan/land/master/japan.geojson');
 				const prefectureData = await response.json();
-				
-				// ソースとして都道府県データを追加
 				map.addSource('prefecture-boundaries', {
 					'type': 'geojson',
 					'data': prefectureData
 				});
-				
-				// 都道府県境界線レイヤーを追加（全体）
 				map.addLayer({
 					'id': 'prefecture-borders',
 					'type': 'line',
@@ -166,8 +106,6 @@ function init() {
 						'line-opacity': 0.6
 					}
 				});
-				
-				// ハイライト用の塗りつぶしレイヤーを追加
 				map.addLayer({
 					'id': 'prefecture-highlight-fill',
 					'type': 'fill',
@@ -177,10 +115,8 @@ function init() {
 						'fill-color': '#007bff',
 						'fill-opacity': 0.1
 					},
-					'filter': ['==', 'name_ja', ''] // 初期状態では何も表示しない
+					'filter': ['==', 'name_ja', '']
 				});
-				
-				// ハイライト用の境界線レイヤーを追加
 				map.addLayer({
 					'id': 'prefecture-highlight-border',
 					'type': 'line',
@@ -191,46 +127,34 @@ function init() {
 						'line-width': 3,
 						'line-opacity': 0.8
 					},
-					'filter': ['==', 'name_ja', ''] // 初期状態では何も表示しない
+					'filter': ['==', 'name_ja', '']
 				});
-				
 			} catch (error) {
 				console.error('都道府県境界データの読み込みに失敗しました:', error);
 			}
 		}
 		
-		// 展開された都道府県をハイライトする関数
 		function updatePrefectureHighlight() {
 			if (!map.getSource('prefecture-boundaries')) return;
-			
-			// 展開されている都道府県名の配列を作成
 			const expandedPrefectureNames = Array.from(expandedPrefectures);
-			
 			if (expandedPrefectureNames.length > 0) {
-				// 複数の都道府県をハイライトするフィルターを作成
 				let filter;
 				if (expandedPrefectureNames.length === 1) {
 					filter = ['==', 'name_ja', expandedPrefectureNames[0]];
 				} else {
 					filter = ['in', 'name_ja', ...expandedPrefectureNames];
 				}
-				
-				// ハイライトレイヤーのフィルターを更新
 				map.setFilter('prefecture-highlight-fill', filter);
 				map.setFilter('prefecture-highlight-border', filter);
 			} else {
-				// ハイライトを非表示
 				map.setFilter('prefecture-highlight-fill', ['==', 'name_ja', '']);
 				map.setFilter('prefecture-highlight-border', ['==', 'name_ja', '']);
 			}
 		}
 
-		// updatePrefectureHighlight関数をグローバルスコープで使用できるようにする
 		window.updatePrefectureHighlight = updatePrefectureHighlight;
 
-		// 現在地から都道府県を判定する関数（拡張版）
 		function getCurrentLocationPrefecture(lat, lon) {
-			// より詳細な座標による都道府県判定
 			if (lat >= 35.5 && lat <= 35.8 && lon >= 139.3 && lon <= 139.9) {
 				return '東京';
 			} else if (lat >= 35.2 && lat <= 36.1 && lon >= 139.8 && lon <= 140.9) {
@@ -265,11 +189,9 @@ function init() {
 			return null;
 		}
 
-		// 現在地を取得して表示する関数
 		function showCurrentLocation() {
 			if (!navigator.geolocation) {
 				console.log('このブラウザは位置情報サービスをサポートしていません。');
-				// 位置情報が取得できない場合でもマーカーリストを表示
 				showMarkerList(allRows);
 				return;
 			}
@@ -278,23 +200,19 @@ function init() {
 				function(position) {
 					const lat = position.coords.latitude;
 					const lon = position.coords.longitude;
-					
-					// 現在地の都道府県を判定
+
 					currentLocationPrefecture = getCurrentLocationPrefecture(lat, lon);
-					
-					// 既存の現在地マーカーがあれば削除
+
 					if (currentLocationMarker) {
 						currentLocationMarker.remove();
 					}
 
-					// 現在地マーカーを作成
 					const currentLocationImg = document.createElement('img');
 					currentLocationImg.src = 'images/cp_blue2.png';
 					currentLocationImg.className = 'current-location-marker';
 					currentLocationImg.style.cursor = 'pointer';
 					currentLocationImg.title = '現在地';
 
-					// 現在地マーカーを地図に追加
 					currentLocationMarker = new maplibregl.Marker({ 
 						element: currentLocationImg, 
 						anchor: 'center' 
@@ -303,13 +221,12 @@ function init() {
 						.addTo(map);
 
 					console.log('現在地を表示しました:', lat, lon, '都道府県:', currentLocationPrefecture);
-					
-					// 現在地取得後にマーカーリストを再表示
+
 					showMarkerList(allRows);
 				},
 				function(error) {
 					console.log('位置情報の取得に失敗しました:', error.message);
-					showMarkerList(allRows); // 位置情報取得失敗時も通常表示
+					showMarkerList(allRows);
 				},
 				{
 					enableHighAccuracy: true,
@@ -319,9 +236,7 @@ function init() {
 			);
 		}
 
-		// マップ読み込み完了時に現在地を自動取得
 		map.on('load', function() {
-			// 有効な境界がある場合は地図をその範囲にフィット
 			if (validPoints > 0 && !bounds.isEmpty()) {
 				map.fitBounds(bounds, {
 					padding: { top: 50, bottom: 50, left: 50, right: 50 },
@@ -329,15 +244,12 @@ function init() {
 				});
 			}
 
-			// 都道府県境界を追加
 			addPrefectureBoundaries();
 
 			showCurrentLocation();
 			
-			// --- NearestStation.csvのマーカー追加 ---
 			if (data.NearestStation && Array.isArray(data.NearestStation)) {
 				data.NearestStation.forEach(row => {
-					// 4列未満や緯度経度が空の場合はスキップ
 					if (!row[3] || !row[4]) return;
 					const latNum = parseFloat(row[3]);
 					const lonNum = parseFloat((row[4] || '').replace(/\r?\n/g, '').trim());
@@ -347,8 +259,6 @@ function init() {
 					const markerDiv = document.createElement('div');
 					markerDiv.className = 'nearest-station-marker';
 					markerDiv.title = '';
-
-					// ポップアップ要素を作成
 					const popupDiv = document.createElement('div');
 					popupDiv.className = 'nearest-station-popup';
 					popupDiv.textContent = nearestStationName;
@@ -360,12 +270,10 @@ function init() {
 					popupDiv.style.pointerEvents = 'none';
 					markerDiv.appendChild(popupDiv);
 
-					// クリックで表示/非表示
 					markerDiv.addEventListener('click', function(e) {
 						e.stopPropagation();
 						popupDiv.style.display = (popupDiv.style.display === 'block') ? 'none' : 'block';
 					});
-					// 地図クリックで非表示
 					map.on('click', function() {
 						popupDiv.style.display = 'none';
 					});
@@ -379,7 +287,6 @@ function init() {
 		console.log('NearestStation markers to add:', data.NearestStation);
 
 		allRows.forEach((row, index) => {
-			// より安全な配列アクセス（修正: CSV の列インデックスに合わせる）
 			const id = row[0] || '';
 			const category = row[1] || '';
 			const type = row[2] || '';
@@ -415,12 +322,10 @@ function init() {
 			marker.getElement().addEventListener('click', (event) => {
 				event.stopPropagation();
 				const infoPanel = document.getElementById('info');
-				// 画像リセット
 				if (lastActiveMarkerIndex !== null && markers[lastActiveMarkerIndex]) {
 					const prevImg = markers[lastActiveMarkerIndex].getElement();
 					if (prevImg && prevImg.tagName === 'IMG') prevImg.src = 'images/pin_blue.png';
 				}
-				// 現在のマーカー画像をmagentaに
 				const thisImg = marker.getElement();
 				if (thisImg && thisImg.tagName === 'IMG') thisImg.src = 'images/pin_magenta.png';
 				lastActiveMarkerIndex = index;
@@ -429,33 +334,24 @@ function init() {
 					if (infoPanel) infoPanel.innerHTML = '';
 					lastClickedMarker = null;
 				} else {
-					// 修正: markerInfoHtml の引数を CSV インデックスに合わせる（type を渡さない）
 					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where);
 					lastClickedMarker = marker;
 				}
 				const leftPanel = document.getElementById('left-panel');
 				if (leftPanel) {
-					// 詳細表示のために内容を差し替える（開閉は不要）
 					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where);
-					
-					// スライドショーのイベントリスナーを設定
 					setupSlideshowListeners();
-					
 					const backBtn = document.getElementById('back-to-list-btn');
 					if (backBtn) {
 						backBtn.addEventListener('click', function() {
-							// 一覧に戻る時にマーカー画像を元に戻す
 							if (lastActiveMarkerIndex !== null && markers[lastActiveMarkerIndex]) {
 								const prevImg = markers[lastActiveMarkerIndex].getElement();
 								if (prevImg && prevImg.tagName === 'IMG') prevImg.src = 'images/pin_blue.png';
 								lastActiveMarkerIndex = null;
 							}
-							// expandedPrefectures の状態を保持したまま一覧表示
-							showMarkerList(allRows);
-							
-							// 地図のビューを適切に調整
+							// 現在のフィルター結果(rows)を使用
+							showMarkerList(rows);
 							if (expandedPrefectures.size > 0) {
-								// 展開されている都道府県（現在は最大1つ）の中心に移動
 								const firstExpandedPrefecture = Array.from(expandedPrefectures)[0];
 								const prefectureConfig = prefectureCenterZoom[firstExpandedPrefecture];
 								if (prefectureConfig) {
@@ -466,7 +362,6 @@ function init() {
 									});
 								}
 							} else {
-								// 展開されている都道府県がない場合
 								if (currentLocationMarker) {
 									const currentLngLat = currentLocationMarker.getLngLat();
 									map.flyTo({
@@ -485,13 +380,10 @@ function init() {
 						});
 					}
 				}
-				// 追加: マーカークリック時にその位置を中心にズーム17
 				map.flyTo({ center: [lonNum, latNum], zoom: 17 });
 				if (window.innerWidth <= 767) setTimeout(() => map.resize(), 300);
 			});
 		});
-
-		// 追加: マーカー生成後に一度一覧を表示（ジオロケーション応答待ちでも見えるように）
 		showMarkerList(allRows);
 	}
 
@@ -502,13 +394,10 @@ function init() {
 		if (BusBookLink && String(BusBookLink).trim() !== '') linksHtml += `<a href="${BusBookLink}" target="_blank">送迎バス予約はここから</a><br>`;
 		if (OtherInfo && String(OtherInfo).trim() !== '') linksHtml += `<p>${OtherInfo}</p><br>`;
 		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食代は別途${lunch}円</p><br>`;
-		
-		// 画像のHTMLを条件付きで追加（スライドショー機能付き）
 		let imageHtml = '';
 		if (num && String(num).trim() !== '') {
 			const numValue = parseInt(String(num).trim());
 			if (numValue >= 2) {
-				// 複数枚の画像がある場合はスライドショー形式
 				imageHtml = `
 					<div class="image-slideshow" data-field-id="${id}" data-total-slides="${numValue}">
 						<div class="slideshow-container">
@@ -526,7 +415,6 @@ function init() {
 					</div>
 				`;
 			} else {
-				// 1枚の場合は従来通り
 				imageHtml = `<img src="images/${id}-1.jpg" 
 					alt="Airsoft field named ${field_name} showing main play area and surroundings. The environment includes outdoor terrain and field structures. Any visible signage reads ${field_name}. The atmosphere is energetic and inviting." 
 					class="field-photos expandable-image" 
@@ -534,14 +422,11 @@ function init() {
 					onerror="this.style.display='none'; console.log('Image not found: ${id}-1.jpg');" />`;
 			}
 		}
-		
-		// 所在地の安全な表示
+
 		let whereHtml = '';
 		if (where !== undefined && where !== null && String(where).trim() !== '' && String(where).trim() !== 'undefined') {
 			whereHtml = `<p>所在地: ${String(where).trim()}</p>`;
 		}
-		
-		// 「一覧に戻る」ボタンを先頭に追加
 		return `
 			<button id="back-to-list-btn" class="back-to-list-btn">一覧に戻る</button>
 			<h2>${field_name}</h2>
@@ -554,109 +439,15 @@ function init() {
 		`;
 	}
 
-	function updateMarkerVisibility(filteredRows) {
-		const filteredIds = new Set(filteredRows.map(row => row[0]));
-		markers.forEach((marker, idx) => {
-			if (!marker) return;
-			const row = markerDataList[idx];
-			marker.getElement().style.display = (row && filteredIds.has(row[0])) ? '' : 'none';
-		});
-	}
-
-	// 都道府県を抽出する関数を拡張
-	function extractPrefecture(fieldName, nearestStation, category) {
-		// categoryの数字から都道府県を判定（READMEの仕様に基づく）
-		const prefectureMap = {
-			'0': '東京',
-			'1': '千葉', 
-			'2': '茨城',
-			'3': '埼玉',
-			'4': '神奈川',
-			'5': '栃木',
-			'6': '群馬',
-			'7': '静岡',
-			'8': '愛知',
-			'9': '大阪',
-			'10': '兵庫',
-			'11': '京都',
-			'12': '福岡',
-			'13': '北海道',
-			'14': '青森',
-			'15': '岩手',
-			'16': '宮城',
-			'17': '秋田',
-			'18': '山形',
-			'19': '福島',
-			'20': '新潟',
-			'21': '富山',
-			'22': '石川',
-			'23': '福井',
-			'24': '山梨',
-			'25': '長野',
-			'26': '岐阜',
-			'27': '三重',
-			'28': '滋賀',
-			'29': '奈良',
-			'30': '和歌山',
-			'31': '鳥取',
-			'32': '島根',
-			'33': '岡山',
-			'34': '広島',
-			'35': '山口',
-			'36': '徳島',
-			'37': '香川',
-			'38': '愛媛',
-			'39': '高知',
-			'40': '佐賀',
-			'41': '長崎',
-			'42': '熊本',
-			'43': '大分',
-			'44': '宮崎',
-			'45': '鹿児島',
-			'46': '沖縄'
-		};
-		
-		// categoryから都道府県を判定
-		if (category !== undefined && category !== null) {
-			const categoryStr = String(category).trim();
-			const prefecture = prefectureMap[categoryStr];
-			if (prefecture) {
-				return prefecture;
-			}
-		}
-		
-		// categoryから判定できない場合は'その他'として扱う
-		return 'その他';
-	}
-
-	// トグル状態に基づいてマーカーの表示/非表示を更新する関数
-	function updateMarkerVisibilityByToggle() {
-		markers.forEach((marker, idx) => {
-			if (!marker) return;
-			const row = markerDataList[idx];
-			if (!row) return;
-
-			// 修正: CSV の列インデックスに合わせて抽出
-			const category = row[1] || '';
-			const field_name = row[3] || '';
-			const nearestStation = row[12] || '';
-			const prefecture = extractPrefecture(field_name, nearestStation, category);
-			
-			// 展開されている都道府県のマーカーのみ表示
-			const isVisible = expandedPrefectures.has(prefecture);
-			marker.getElement().style.display = isVisible ? '' : 'none';
-		});
-	}
-
 	function showMarkerList(rowsToShow) {
 		const leftPanel = document.getElementById('left-panel');
 		if (!leftPanel) return;
-		
-		// ローディングを非表示にする
+
 		hideLoading();
 		
-		// 50音順に並べ替え（変更: FieldList.csv の reading (row[11]) を第一キーにしてソート、
-		// reading が空の場合のみ field_name (row[3]) をフォールバックとして使用）
+		// rowsToShowをグローバルなrows変数に保存
+		rows = rowsToShow;
+		
 		const sortedRows = [...rowsToShow].sort((a, b) => {
 			const readingA = ((a && a[11]) || '').toString().normalize('NFKC');
 			const readingB = ((b && b[11]) || '').toString().normalize('NFKC');
@@ -670,8 +461,7 @@ function init() {
 			const hiraB = toHiragana(keyB);
 			return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
 		});
-		
-		// 都道府県別にグループ化
+
 		const prefectureGroups = {};
 		sortedRows.forEach(row => {
 			if (!row || !Array.isArray(row)) return;
@@ -689,7 +479,6 @@ function init() {
 			}
 			prefectureGroups[prefecture].push(row);
 		});
-		// 各都道府県グループ内でも50音順に並び替え（変更: reading を第一キーに） 
 		Object.keys(prefectureGroups).forEach(prefecture => {
 			prefectureGroups[prefecture].sort((a, b) => {
 				const readingA = ((a && a[11]) || '').toString().normalize('NFKC');
@@ -705,8 +494,7 @@ function init() {
 				return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
 			});
 		});
-		
-		// 都道府県順に並べ替え（47都道府県 + その他）
+
 		const prefectureOrder = [
 			'北海道', '青森', '岩手', '宮城', '秋田', '山形', '福島',
 			'茨城', '栃木', '群馬', '埼玉', '千葉', '東京', '神奈川',
@@ -721,17 +509,11 @@ function init() {
 		
 		prefectureOrder.forEach(prefecture => {
 			if (!prefectureGroups[prefecture]) return;
-			
 			const fieldsCount = prefectureGroups[prefecture].length;
-			
-			// 展開状態を確認（expandedPrefecturesセットに基づく）
 			let isExpanded = expandedPrefectures.has(prefecture);
-			// 現在地の都道府県の場合は初回のみ展開状態に追加
 			if (!expandedPrefectures.size && prefecture === currentLocationPrefecture) {
 				expandedPrefectures.add(prefecture);
 				isExpanded = true;
-
-				// 追加: 自動展開された場合は、その都道府県の center/zoom に合わせて初期表示を調整
 				const cfg = prefectureCenterZoom[prefecture];
 				if (cfg && map) {
 					map.flyTo({
@@ -755,7 +537,6 @@ function init() {
 			`;
 			
 			prefectureGroups[prefecture].forEach(row => {
-				// CSV の構成に合わせて正しいインデックスから値を取得
 				const id = row[0] || '';
 				const field_name = row[3] || '';
 				html += `<li><button class="marker-list-btn" data-marker-id="${id}">${field_name}</button></li>`;
@@ -769,8 +550,6 @@ function init() {
 		
 		html += '</div>';
 		leftPanel.innerHTML = html;
-		
-		// トグルボタンのイベントリスナー
 		leftPanel.querySelectorAll('.prefecture-toggle').forEach(toggleBtn => {
 			toggleBtn.addEventListener('click', function() {
 				const prefecture = this.getAttribute('data-prefecture');
@@ -778,7 +557,6 @@ function init() {
 				const toggleIcon = this.querySelector('.toggle-icon');
 				
 				if (fieldsList.style.display === 'none') {
-					// 他の都道府県をすべて閉じる
 					expandedPrefectures.forEach(openPrefecture => {
 						if (openPrefecture !== prefecture) {
 							const otherFieldsList = leftPanel.querySelector(`.prefecture-fields[data-prefecture="${openPrefecture}"]`);
@@ -787,16 +565,12 @@ function init() {
 							if (otherToggleIcon) otherToggleIcon.textContent = '+';
 						}
 					});
-					
-					// expandedPrefecturesをクリアして現在の都道府県のみ追加
+
 					expandedPrefectures.clear();
 					expandedPrefectures.add(prefecture);
-					
-					// 現在クリックした都道府県を展開
+
 					fieldsList.style.display = 'block';
 					toggleIcon.textContent = '-';
-					
-					// 都道府県を展開したときに地図の中心とズームを調整
 					const prefectureConfig = prefectureCenterZoom[prefecture];
 					if (prefectureConfig) {
 						map.flyTo({
@@ -806,14 +580,11 @@ function init() {
 						});
 					}
 				} else {
-					// 現在の都道府県を閉じる
 					fieldsList.style.display = 'none';
 					toggleIcon.textContent = '+';
 					expandedPrefectures.delete(prefecture);
-					
-					// 都道府県を閉じたときの処理
+
 					if (expandedPrefectures.size === 0) {
-						// 現在地がある場合は現在地を中心に表示
 						if (currentLocationMarker) {
 							const currentLngLat = currentLocationMarker.getLngLat();
 							map.flyTo({
@@ -822,7 +593,6 @@ function init() {
 								duration: 1000
 							});
 						} else {
-							// 現在地がない場合はデフォルト位置
 							map.flyTo({
 								center: [139.98886293394258, 35.853556991089334],
 								zoom: 8.7,
@@ -831,29 +601,25 @@ function init() {
 						}
 					}
 				}
-				
-				// トグル状態変更時にマーカーの表示を更新
-				updateMarkerVisibilityByToggle();
-				
-				// 都道府県のハイライトを更新
+
+				// マーカー表示を更新（フィルター結果とトグル状態の両方を考慮）
+				updateMarkerVisibilityWithFilter();
+
 				if (window.updatePrefectureHighlight) {
 					window.updatePrefectureHighlight();
 				}
 			});
 		});
-		
-		// マーカーリストボタンのイベントリスナー
+
 		leftPanel.querySelectorAll('button[data-marker-id]').forEach(btn => {
 			btn.addEventListener('click', function() {
 				const markerId = this.getAttribute('data-marker-id');
 				const idx = allRows.findIndex(row => row[0] == markerId);
 				if (markers[idx] && markers[idx].getElement()) {
-					// 画像リセット
 					if (lastActiveMarkerIndex !== null && markers[lastActiveMarkerIndex]) {
 						const prevImg = markers[lastActiveMarkerIndex].getElement();
 						if (prevImg && prevImg.tagName === 'IMG') prevImg.src = 'images/pin_blue.png';
 					}
-					// 現在のマーカー画像をmagentaに
 					const thisImg = markers[idx].getElement();
 					if (thisImg && thisImg.tagName === 'IMG') thisImg.src = 'images/pin_magenta.png';
 					lastActiveMarkerIndex = idx;
@@ -864,219 +630,39 @@ function init() {
 				}
 			});
 		});
-		
-		// 初期状態での現在地都道府県を展開（一度だけ）
+
 		if (!expandedPrefectures.size && currentLocationPrefecture) {
 			expandedPrefectures.add(currentLocationPrefecture);
 		}
-		
-		// マーカーの表示を更新
-		updateMarkerVisibilityByToggle();
-		
-		// 都道府県のハイライトを更新
+
+		// マーカー表示を更新（フィルター結果とトグル状態の両方を考慮）
+		updateMarkerVisibilityWithFilter();
+
 		if (window.updatePrefectureHighlight) {
 			window.updatePrefectureHighlight();
 		}
 	}
 
-	// 追加: type フィルター UI の初期化（スイッチ表示、全表示連動）
-	function initTypeFilterUI() {
-		const container = document.getElementById('type-filter');
-		if (!container) return;
+	function extractPrefecture(fieldName, nearestStation, category) {
+		const prefectureMap = {
+			'0': '東京','1': '千葉', '2': '茨城','3': '埼玉','4': '神奈川','5': '栃木','6': '群馬','7': '静岡','8': '愛知','9': '大阪','10': '兵庫','11': '京都','12': '福岡','13': '北海道','14': '青森','15': '岩手','16': '宮城','17': '秋田','18': '山形','19': '福島','20': '新潟','21': '富山','22': '石川','23': '福井','24': '山梨','25': '長野','26': '岐阜','27': '三重','28': '滋賀','29': '奈良','30': '和歌山','31': '鳥取','32': '島根','33': '岡山','34': '広島','35': '山口','36': '徳島','37': '香川','38': '愛媛','39': '高知','40': '佐賀','41': '長崎','42': '熊本','43': '大分','44': '宮崎','45': '鹿児島','46': '沖縄'
+		};
 
-		const allInput = container.querySelector('input[data-type="all"]');
-		const typeInputs = Array.from(container.querySelectorAll('input[type="checkbox"][data-type]'))
-			.filter(i => String(i.getAttribute('data-type')) !== 'all');
-
-		// 初期状態: 全表示スイッチがチェックされていれば個別も全てチェック
-		if (allInput && allInput.checked) {
-			typeInputs.forEach(cb => cb.checked = true);
+		if (category !== undefined && category !== null) {
+			const categoryStr = String(category).trim();
+			const prefecture = prefectureMap[categoryStr];
+			if (prefecture) {
+				return prefecture;
+			}
 		}
 
-		// selectedTypes を初期化
-		selectedTypes.clear();
-		typeInputs.forEach(cb => { if (cb.checked) selectedTypes.add(String(cb.getAttribute('data-type'))); });
-
-		// 全表示スイッチの挙動（オン→すべてオン、オフ→すべてオフ）
-		if (allInput) {
-			allInput.addEventListener('change', () => {
-				const checked = !!allInput.checked;
-				typeInputs.forEach(cb => cb.checked = checked);
-				selectedTypes.clear();
-				if (checked) typeInputs.forEach(cb => selectedTypes.add(String(cb.getAttribute('data-type'))));
-				applyFilters();
-			});
-		}
-
-		// 個別スイッチの挙動（変化時に selectedTypes 更新、全表示スイッチの状態も更新）
-		typeInputs.forEach(cb => {
-			cb.addEventListener('change', () => {
-				// 更新 selectedTypes
-				selectedTypes.clear();
-				typeInputs.forEach(c => { if (c.checked) selectedTypes.add(String(c.getAttribute('data-type'))); });
-
-				// 全選択状態なら全表示をチェック、そうでなければ外す
-				if (allInput) {
-					const allCheckedNow = typeInputs.every(c => c.checked);
-					allInput.checked = allCheckedNow;
-				}
-
-				applyFilters();
-			});
-		});
+		return 'その他';
 	}
 
-	// 追加: row が選択 type を含むか判定（type列は row[2]）
-	function rowHasSelectedType(row) {
-		if (!selectedTypes || selectedTypes.size === 0) return true;
-		const raw = String(row[2] || '');
-		const types = raw.split(/[^0-9]+/).filter(Boolean);
-		return types.some(t => selectedTypes.has(t));
-	}
-
-	function applyFilters() {
-		const keyword = currentKeyword.trim().toLowerCase();
-
-		// 取得: DOM 上の type チェックボックスの状態を常に最新で反映
-		const typeContainer = document.getElementById('type-filter');
-		let selectedTypesLive = null;
-		let allChecked = true;
-		if (typeContainer) {
-			const allInput = typeContainer.querySelector('input[data-type="all"]');
-			const typeInputs = Array.from(typeContainer.querySelectorAll('input[type="checkbox"][data-type]'))
-				.filter(i => String(i.getAttribute('data-type')) !== 'all');
-			selectedTypesLive = new Set(typeInputs.filter(i => i.checked).map(i => String(i.getAttribute('data-type'))));
-			allChecked = !!(allInput && allInput.checked);
-		}
-
-		// 優先タイプの状態
-		const indoorDisabled = !!(selectedTypesLive && !selectedTypesLive.has('0'));
-		const outdoorDisabled = !!(selectedTypesLive && !selectedTypesLive.has('1'));
-
-		let filteredRows = allRows;
-
-		// キーワード絞り込み（既存のロジックをそのまま使用）
-		if (keyword) {
-			const keywordHira = toHiragana(keyword);
-			const keywordKana = toKatakana(keyword);
-			const keywordRoma = toRomaji(toHiragana(keyword));
-			const isKana = /^[\u3041-\u3096]+$/.test(keyword);
-			const isKatakana = /^[\u30a1-\u30f6]+$/.test(keyword);
-			const keywordNorm = normalizeText(keyword);
-			const keywordHiraNorm = normalizeText(keywordHira);
-			const keywordKanaNorm = normalizeText(keywordKana);
-			const keywordAlphaKana = toKatakanaFromAlphabet(keyword);
-			const keywordAlphaKanaNorm = normalizeText(keywordAlphaKana);
-
-			filteredRows = filteredRows.filter(row => {
-				if (!row || !Array.isArray(row)) return false;
-				
-				const fieldName = (row[3] || '');
-				const reading = (row[11] || '');
-				const fieldNameLower = fieldName.toLowerCase();
-				const readingLower = reading.toLowerCase();
-				const fieldNameHira = toHiragana(fieldNameLower);
-				const fieldNameKana = toKatakana(fieldNameLower);
-				const fieldNameRoma = toRomaji(toHiragana(fieldNameLower));
-				const fieldNameAlphaKana = toKatakanaFromAlphabet(fieldNameLower);
-				const readingHira = toHiragana(readingLower);
-				const readingKana = toKatakana(readingLower);
-				const readingRoma = toRomaji(toHiragana(readingLower));
-				const readingAlphaKana = toKatakanaFromAlphabet(readingLower);
-
-				let jNameConverted = fieldNameLower;
-				if (isKana) jNameConverted = toHiragana(fieldNameLower);
-				else if (isKatakana) jNameConverted = toKatakana(fieldNameLower);
-
-				let readingConverted = readingLower;
-				if (isKana) readingConverted = toHiragana(readingLower);
-				else if (isKatakana) readingConverted = toKatakana(readingLower);
-
-				const readingNorm = normalizeText(readingLower);
-				const readingHiraNorm = normalizeText(readingHira);
-				const readingKanaNorm = normalizeText(readingKana);
-
-				return (
-					fieldNameLower.includes(keyword) ||
-					fieldNameHira.includes(keywordHira) ||
-					fieldNameKana.includes(keywordKana) ||
-					fieldNameRoma.includes(keywordRoma) ||
-					fieldNameAlphaKana.includes(keywordKana) ||
-					jNameConverted.includes(keywordHira) ||
-					jNameConverted.includes(keywordKana) ||
-					readingLower.includes(keyword) ||
-					readingHira.includes(keywordHira) ||
-					readingKana.includes(keywordKana) ||
-					readingRoma.includes(keywordRoma) ||
-					readingAlphaKana.includes(keywordKana) ||
-					readingConverted.includes(keywordHira) ||
-					readingConverted.includes(keywordKana) ||
-					readingNorm.includes(keywordNorm) ||
-					readingHiraNorm.includes(keywordHiraNorm) ||
-					readingKanaNorm.includes(keywordKanaNorm) ||
-					normalizeText(fieldNameAlphaKana).includes(keywordAlphaKanaNorm) ||
-					normalizeText(readingAlphaKana).includes(keywordAlphaKanaNorm)
-				);
-			});
-		}
-
-		// 統一: type フィルタ（インドア/アウトドア優先ルールを含む）
-		if (selectedTypesLive && !allChecked) {
-			filteredRows = filteredRows.filter(row => {
-				if (!row || !Array.isArray(row)) return false;
-				const raw = String(row[2] || '');
-				const types = raw.split(/[^0-9]+/).filter(Boolean);
-				const has0 = types.includes('0');
-				const has1 = types.includes('1');
-
-				// 両方オフなら 0 または 1 を含む行は即座に除外
-				if (indoorDisabled && outdoorDisabled) {
-					if (has0 || has1) return false;
-				} else if (indoorDisabled && !outdoorDisabled) {
-					// インドアのみオフ：インドアを含みアウトドアを含まない行は優先的に除外
-					if (has0 && !has1) return false;
-				} else if (outdoorDisabled && !indoorDisabled) {
-					// アウトドアのみオフ：アウトドアを含みインドアを含まない行は優先的に除外
-					if (has1 && !has0) return false;
-				}
-
-				// 最終判定: 少なくとも選択された type のいずれかを持つこと
-				return types.some(t => selectedTypesLive.has(t));
-			});
-		}
-
-		// 追加: 昼食フィルタを適用（row[14] が空でないもののみ残す）
-		if (lunchOnly) {
-			filteredRows = filteredRows.filter(row => {
-				if (!row || !Array.isArray(row)) return false;
-				const lunchVal = String(row[14] || '').trim();
-				return lunchVal !== '';
-			});
-		}
-
-		// 追加: 送迎バスフィルタを適用（has_bus が 1 または true のもののみ残す）
-		if (busOnly) {
-			filteredRows = filteredRows.filter(row => {
-				if (!row || !Array.isArray(row)) return false;
-				const candidates = [17, 18, 19, 20];
-				for (const idx of candidates) {
-					if (typeof row[idx] !== 'undefined') {
-						const v = String(row[idx] || '').trim().toLowerCase();
-						if (v === '1' || v === 'true' || v === 'yes' || v === '有' || v === 'あり') return true;
-						if (v !== '') return false;
-					}
-				}
-				return false;
-			});
-		}
-
-		rows = filteredRows;
-
-		// 左リストを type フィルタ後の行で再描画
-		showMarkerList(filteredRows);
-
-		// マーカー表示更新：既存のトグル状態と絞込結果に基づく
-		const filteredIds = new Set(filteredRows.map(row => row && row[0]).filter(id => id));
+	// フィルター結果とトグル状態の両方を考慮してマーカーの表示を更新
+	function updateMarkerVisibilityWithFilter() {
+		const filteredIds = new Set(rows.map(row => row && row[0]).filter(id => id));
+		
 		markers.forEach((marker, idx) => {
 			if (!marker) return;
 			const row = markerDataList[idx];
@@ -1094,26 +680,28 @@ function init() {
 			marker.getElement().style.display = isVisible ? '' : 'none';
 		});
 	}
-	// 追加: 送迎バスフィルタ UI 初期化
-	function initBusFilterUI() {
-		const busToggle = document.getElementById('bus-toggle');
-		if (!busToggle) return;
-		busOnly = !!busToggle.checked;
-		busToggle.addEventListener('change', () => {
-			busOnly = !!busToggle.checked;
-			applyFilters();
-		});
+
+	function applyFilters() {
+		const filteredRows = typeFilter.applyFilters(
+			allRows, 
+			toHiragana, 
+			toKatakana, 
+			toRomaji, 
+			toKatakanaFromAlphabet, 
+			normalizeText
+		);
+
+		rows = filteredRows;
+
+		showMarkerList(filteredRows);
 	}
 
-	// スライドショーのイベントリスナーを設定する関数
 	function setupSlideshowListeners() {
-		// 既存のリスナーを削除（重複防止）
 		document.querySelectorAll('.prev-btn, .next-btn').forEach(btn => {
 			const newBtn = btn.cloneNode(true);
 			btn.parentNode.replaceChild(newBtn, btn);
 		});
-		
-		// 新しいリスナーを設定
+
 		document.querySelectorAll('.prev-btn').forEach(btn => {
 			btn.addEventListener('click', function(e) {
 				e.preventDefault();
@@ -1132,13 +720,10 @@ function init() {
 			});
 		});
 
-		// 画像クリック/タップで全画面表示のリスナーを設定
 		setupImageExpandListeners();
 	}
 
-	// スライドショー機能を修正
 	function changeSlide(id, direction) {
-		// スライドショーコンテナから情報を取得
 		const slideshowContainer = document.querySelector(`.image-slideshow[data-field-id="${id}"]`);
 		if (!slideshowContainer) return;
 		
@@ -1165,7 +750,6 @@ function init() {
 		console.log(`Slide changed for ${id}: ${currentIndex} -> ${newIndex}`);
 	}
 
-	// 画像拡大表示のイベントリスナーを設定する関数
 	function setupImageExpandListeners() {
 		document.querySelectorAll('.expandable-image').forEach(img => {
 			const newImg = img.cloneNode(true);
@@ -1181,21 +765,17 @@ function init() {
 		});
 	}
 
-	// 画像を全画面表示する関数
 	function expandImage(src, alt) {
-		// 既存のモーダルがあれば削除
 		const existingModal = document.getElementById('image-modal');
 		if (existingModal) {
 			existingModal.remove();
 		}
 
-		// field-idと現在のスライド番号を取得
 		const fieldId = extractFieldIdFromSrc(src);
 		const currentSlide = extractSlideNumberFromSrc(src);
 		const slideshowContainer = document.querySelector(`.image-slideshow[data-field-id="${fieldId}"]`);
 		const totalSlides = slideshowContainer ? parseInt(slideshowContainer.getAttribute('data-total-slides')) : 1;
 
-		// モーダル要素を作成
 		const modal = document.createElement('div');
 		modal.id = 'image-modal';
 		modal.className = 'image-modal';
@@ -1217,19 +797,16 @@ function init() {
 		modalContent.appendChild(expandedImg);
 		modal.appendChild(modalContent);
 		document.body.appendChild(modal);
-		
-		// タッチイベント用の変数
+
 		let startX = 0;
 		let endX = 0;
 		let currentSlideNumber = currentSlide;
-		
-		// スワイプ処理関数
+
 		function changeExpandedSlide(direction) {
 			if (totalSlides <= 1) return;
 			
 			let newSlideNumber = currentSlideNumber + direction;
-			
-			// ループ処理
+
 			if (newSlideNumber > totalSlides) {
 				newSlideNumber = 1;
 			} else if (newSlideNumber < 1) {
@@ -1238,15 +815,12 @@ function init() {
 			
 			currentSlideNumber = newSlideNumber;
 			expandedImg.src = `images/${fieldId}-${newSlideNumber}.jpg`;
-			
-			// 元のスライドショーも同期
 			const originalImg = document.getElementById(`slideshow-img-${fieldId}`);
 			const currentSpan = document.getElementById(`slide-current-${fieldId}`);
 			if (originalImg) originalImg.src = `images/${fieldId}-${newSlideNumber}.jpg`;
 			if (currentSpan) currentSpan.textContent = newSlideNumber;
 		}
-		
-		// タッチイベントリスナー
+
 		modal.addEventListener('touchstart', function(e) {
 			startX = e.touches[0].clientX;
 		}, { passive: true });
@@ -1254,20 +828,16 @@ function init() {
 		modal.addEventListener('touchend', function(e) {
 			endX = e.changedTouches[0].clientX;
 			const diffX = startX - endX;
-			
-			// 50px以上のスワイプで反応
+
 			if (Math.abs(diffX) > 50) {
 				if (diffX > 0) {
-					// 左スワイプ（次の画像）
 					changeExpandedSlide(1);
 				} else {
-					// 右スワイプ（前の画像）
 					changeExpandedSlide(-1);
 				}
 			}
 		}, { passive: true });
-		
-		// キーボードイベント（矢印キー）
+
 		const handleKeyPress = (e) => {
 			if (e.key === 'Escape') {
 				closeModal();
@@ -1279,13 +849,11 @@ function init() {
 			}
 		};
 		document.addEventListener('keydown', handleKeyPress);
-		
-		// モーダルを表示
+
 		setTimeout(() => {
 			modal.classList.add('show');
 		}, 10);
-		
-		// 閉じるイベントリスナー
+
 		const closeModal = () => {
 			modal.classList.remove('show');
 			setTimeout(() => {
@@ -1303,140 +871,20 @@ function init() {
 			}
 		});
 	}
-	
-	// srcからfield-idを抽出する関数
+
 	function extractFieldIdFromSrc(src) {
 		const match = src.match(/images\/(.+)-\d+\.jpg/);
 		return match ? match[1] : null;
 	}
-	
-	// srcからスライド番号を抽出する関数
+
 	function extractSlideNumberFromSrc(src) {
 		const match = src.match(/images\/.+-(\d+)\.jpg/);
 		return match ? parseInt(match[1]) : 1;
 	}
 
-	const markerSearch = document.getElementById('marker-search');
-	if (markerSearch) {
-		markerSearch.addEventListener('input', function(e) {
-			currentKeyword = e.target.value;
-			applyFilters();
-		});
-	}
-
-	// 追加: type フィルター UI を初期化（DOM にチェックボックスがある前提）
-	initTypeFilterUI();
-
-	// 追加: 昼食フィルタ UI 初期化
-	function initLunchFilterUI() {
-		const lunchToggle = document.getElementById('lunch-toggle');
-		if (!lunchToggle) return;
-		// 初期値: オフ
-		lunchOnly = !!lunchToggle.checked;
-		lunchToggle.addEventListener('change', () => {
-			lunchOnly = !!lunchToggle.checked;
-			// フィルタ適用（type/keyword の現在状態に基づく）
-			applyFilters();
-		});
-	}
-	initLunchFilterUI();
-	initBusFilterUI();
-
-	// 追加: モバイル用の絞り込みトグルボタンの挙動
-	(function setupFilterToggle() {
-		const filterBtn = document.getElementById('filter-toggle-btn');
-		const typeFilter = document.getElementById('type-filter');
-		if (!filterBtn || !typeFilter) return;
-
-		// トグルクリックで表示/非表示
-		filterBtn.addEventListener('click', () => {
-			const isCollapsed = typeFilter.classList.toggle('collapsed');
-			filterBtn.setAttribute('aria-expanded', String(!isCollapsed));
-		});
-
-		// リサイズ時の既定表示制御（スマホ幅では折りたたむ）
-		function updateFilterByWidth() {
-			if (window.innerWidth <= 767) {
-				// モバイル時は初期で折りたたむ（ユーザー操作で開閉可能）
-				if (!typeFilter.classList.contains('collapsed')) {
-					typeFilter.classList.add('collapsed');
-					filterBtn.setAttribute('aria-expanded', 'false');
-				}
-				filterBtn.style.display = 'block';
-			} else {
-				// デスクトップでは常に表示
-				typeFilter.classList.remove('collapsed');
-				filterBtn.style.display = 'none';
-				filterBtn.setAttribute('aria-expanded', 'true');
-				typeFilter.style.display = ''; // style reset
-			}
-		}
-
-		// 初期化およびイベント登録
-		updateFilterByWidth();
-		window.addEventListener('resize', updateFilterByWidth);
-
-		// 追加: DOM/CSS の競合で collapsed が反映されない場合に備え、style.display を直接操作して確実に非表示にするフォールバックを導入
-		// （class 切替後に display が残るブラウザや inline style が優先されるケースをカバー）
-		const applyCollapsedVisibility = () => {
-			if (typeFilter.classList.contains('collapsed')) {
-				typeFilter.style.display = 'none';
-			} else {
-				// remove inline override to let stylesheet control layout
-				typeFilter.style.display = '';
-			}
-		};
-		// 初回適用
-		applyCollapsedVisibility();
-		// class が変わったときに確実に反映する監視
-		const observer = new MutationObserver(mutations => {
-			for (const m of mutations) {
-				if (m.attributeName === 'class') {
-					applyCollapsedVisibility();
-				}
-			}
-		});
-		observer.observe(typeFilter, { attributes: true });
-
-		// 破棄はしない（ページライフタイム中は監視を維持）
-	})();
+	// フィルター変更時のコールバック設定
+	typeFilter.onFilterChange = applyFilters;
 	
-	// 追加: モバイル用 options ボタンのセットアップ
-	(function setupOptionsMobileToggle() {
-		const btn = document.getElementById('options-toggle-mobile');
-		const panel = document.getElementById('options-filter');
-		if (!btn || !panel) return;
-
-		// クリックで表示/非表示をトグル
-		btn.addEventListener('click', () => {
-			const isCollapsed = panel.classList.toggle('collapsed');
-			btn.setAttribute('aria-expanded', String(!isCollapsed));
-		});
-
-		// 初期表示: 画面幅がモバイルなら折りたたんでおく（必要なら変更）
-		function updateByWidth() {
-			if (window.innerWidth <= 767) {
-				if (!panel.classList.contains('collapsed')) panel.classList.add('collapsed');
-				btn.style.display = 'block';
-				btn.setAttribute('aria-expanded', 'false');
-			} else {
-				// デスクトップでは常に表示
-				panel.classList.remove('collapsed');
-				btn.style.display = 'none';
-				btn.setAttribute('aria-expanded', 'true');
-				panel.style.display = ''; // style reset
-			}
-		}
-		updateByWidth();
-		window.addEventListener('resize', updateByWidth);
-
-		// 競合回避: class 変更時に display を反映
-		const applyCollapsedVisibility = () => {
-			if (panel.classList.contains('collapsed')) panel.style.display = 'none';
-			else panel.style.display = '';
-		};
-		applyCollapsedVisibility();
-		const mo = new MutationObserver(() => applyCollapsedVisibility());
-		mo.observe(panel, { attributes: true });
-	})();
+	// フィルターUIの初期化
+	typeFilter.initAll();
 }
