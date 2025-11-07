@@ -55,5 +55,4 @@ async function checkAndInit() {
 	}
 }
 
-// ...existing code...
 checkAndInit();

@@ -383,7 +383,8 @@ function init() {
 		if (BookLink && String(BookLink).trim() !== '') linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
 		if (BusBookLink && String(BusBookLink).trim() !== '') linksHtml += `<a href="${BusBookLink}" target="_blank">送迎バス予約はここから</a><br>`;
 		if (OtherInfo && String(OtherInfo).trim() !== '') linksHtml += `<p>${OtherInfo}</p><br>`;
-		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食代は別途${lunch}円</p><br>`;
+		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食：${lunch}あり</p><br>`;
+		else {linksHtml += `<p>昼食：なし</p><br>`;}
 		let imageHtml = '';
 		if (num && String(num).trim() !== '') {
 			const numValue = parseInt(String(num).trim());

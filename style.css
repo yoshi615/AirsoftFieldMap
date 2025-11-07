@@ -66,7 +66,6 @@ body {
 	display: block;
 	pointer-events: auto;
 }
-/* スライドショー関連 */
 .image-slideshow { position: relative; width: 100%; margin: 10px 0; }
 .slideshow-container { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; }
 .slideshow-image { width: 100%; height: auto; display: block; border-radius: 8px; }
@@ -99,7 +98,6 @@ body {
     transform: translateY(-50%) scale(0.95);
 }
 .slide-counter { text-align: center; margin-top: 8px; font-size: 14px; color: #666; font-weight: 500; }
-/* 画像拡大表示用モーダル */
 .image-modal {
     display: none;
     position: fixed;
@@ -154,7 +152,6 @@ body {
     transition: background-color 0.3s ease;
 }
 .close-modal:hover { background: rgba(0, 0, 0, 0.9); }
-/* ローディング表示 */
 .loading-container {
     display: flex;
     flex-direction: column;
@@ -165,7 +162,6 @@ body {
 }
 .loading-container.hidden { display: none; }
 .loading-gif { width: 580px; height: 580px; margin-bottom: 15px; }
-/* 都道府県境界表示 */
 .prefecture-group { margin-bottom: 5px; }
 .prefecture-toggle {
     width: 88%;
@@ -201,7 +197,6 @@ body {
     transition: background-color 0.2s ease;
 }
 .prefecture-fields .marker-list-btn:hover { background-color: #f8f9fa; text-decoration: none; }
-/* パネル（右上表示） */
 .type-filter-panel {
 	position: absolute;
 	top: 60px;
@@ -214,9 +209,8 @@ body {
 	width: 140px;
 }
 
-/* モバイル用 Options トグル（左上、デスクトップでは非表示） */
 #options-toggle-mobile {
-    display: none; /* デフォルトは非表示（デスクトップ） */
+    display: none;
     position: absolute;
     top: 8px;
     left: 8px;
@@ -230,7 +224,6 @@ body {
     cursor: pointer;
 }
 
-/* options パネル（左上） */
 .options-filter-panel{
     position:absolute;
     top: 10px;
@@ -242,11 +235,7 @@ body {
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     width: 200px;
 }
-
-/* 折りたたみ用クラス（非表示） */
 .options-filter-panel.collapsed { display: none !important; }
-
-/* options 内の検索入力を見やすく調整（panel 内では静的配置） */
 .options-filter-panel .marker-search {
     position: static !important;
     top: auto !important;
@@ -258,34 +247,15 @@ body {
     padding: 6px 8px;
 }
 
-/* 追加: 昼食フィルタパネル（type-filter-panel と同等のスタイル） */
-/*.lunch-filter-panel {
-	position: absolute;
-	top: 10px;
-	right: 160px;/z-index: 9999;
-	background: #fff;
-	padding: 8px;
-	border-radius: 6px;
-	box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-	width: 160px;
-}*/
-
-/* モバイル時の位置調整（既存の media query と併用） */
-/*@media (max-width: 767px) {.lunch-filter-panel {position: absolute !important;top: 10px !important;right: 15px !important;width: 140px !important;height: auto;}}
-
-/* 縦並び、左揃え */
 .type-filter { font-size:12px; display:flex; flex-direction:column; align-items:flex-start; gap:8px; flex-wrap:nowrap; }
-/* スイッチ（トグル） */
 .switch { position:relative; display:inline-block; width:40px; height:22px; vertical-align:middle; }
 .switch input { display:none; }
 .switch .slider { position:absolute; inset:0; background:#ccc; border-radius:999px; transition:0.18s; }
 .switch .slider::before { content:""; position:absolute; width:16px; height:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:0.18s; box-shadow:0 1px 2px rgba(0,0,0,0.2); }
 .switch input:checked + .slider { background:#4caf50; }
 .switch input:checked + .slider::before { transform:translateX(18px); }
-/* ラベル / 各行 */
 .type-label { font-size:12px; margin-left:6px; }
 .type-item { display:flex; align-items:center; gap:6px; margin:0 0 6px 0; justify-content:flex-start; }
-/* 検索欄（デスクトップ位置） */
 .marker-search {
 	position: absolute;
 	top: 10px;
@@ -297,7 +267,7 @@ body {
 	background: #fff;
 	width: 120px;
 }
-/* モバイル用の切り替えボタン（初期は非表示） */
+
 #filter-toggle-btn {
 	display: none;
 	position: absolute;
@@ -312,7 +282,6 @@ body {
 	font-size: 13px;
 }
 
-/* collapsed クラスは常に優先で非表示 */
 #type-filter.collapsed { display: none !important; }
 
 /* =========================
@@ -424,7 +393,6 @@ body {
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         object-fit: contain;
     }
-    /* 変更: 縦並びで左揃えにする（スライダーを左合わせ） */
     .type-filter { font-size:12px; display:flex; flex-direction:column; align-items:flex-start; gap:8px; flex-wrap:nowrap; }
     .switch { position:relative; display:inline-block; width:40px; height:22px; vertical-align:middle; }
     .switch input { display:none; }
@@ -546,7 +514,7 @@ body {
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         object-fit: contain;
     }
-    /* スライドショー調整 */
+
     .prev-btn, .next-btn {
         width: 35px;
         height: 35px;
@@ -554,7 +522,7 @@ body {
     }
     .prev-btn { left: 5px; }
     .next-btn { right: 5px; }
-    /* モーダル調整 */
+
     .close-modal {
         top: 50px;
         left: 8px;
@@ -566,7 +534,7 @@ body {
         width: calc(100vw - 40px);
         height: calc(100vh - 60px);
     }
-    /* ローディング調整 */
+
     .loading-container {
         height: 150px;
         padding: 15px;
@@ -576,7 +544,7 @@ body {
         height: 570px;
         margin-bottom: 10px;
     }
-    /* 検索欄位置調整 */
+
     .marker-search {
         position: absolute !important;
         top: 10px !important;
@@ -585,7 +553,7 @@ body {
         z-index: 9999;
         width: 121px !important;
     }
-    /* フィルタパネル調整 */
+
     .type-filter-panel {
         position: absolute !important;
         top: 10px !important;
@@ -595,11 +563,9 @@ body {
         height: 282px;
         overflow-y: auto;
     }
-    /* 折りたたみ用ボタン表示 */
     #filter-toggle-btn { display: block; }
 }
 
-/* 小さなスクリーン向けの調整 */
 @media (max-width: 480px) {
     .prev-btn, .next-btn {
         width: 30px;
@@ -608,9 +574,8 @@ body {
     }
 }
 
-/* 変更: .lunch-filter-panel を type パネル内に統合して表示されるように変更 */
 .lunch-filter-panel {
-	/* 絶対配置を解除し、type-filter 内に馴染むようにする */
+
 	position: static;
 	top: auto;
 	right: auto;
@@ -623,7 +588,6 @@ body {
 	margin-top: 8px;
 }
 
-/* モバイル時の調整（以前の絶対指定を無効化） */
 @media (max-width: 767px) {
 	.lunch-filter-panel {
 		position: static !important;
@@ -635,7 +599,6 @@ body {
 	}
 }
 
-/* 追加: options パネル内の検索欄が絶対配置に上書きされる問題を修正 */
 @media (max-width: 767px) {
 	.options-filter-panel .marker-search {
 		position: static !important;
@@ -644,7 +607,7 @@ body {
 		right: auto !important;
 		transform: none !important;
 		width: calc(100% - 0px) !important;
-		margin: 12px 0 8px 0 !important; /* モバイルでも上余白を付与 */
+		margin: 12px 0 8px 0 !important;
 		box-sizing: border-box !important;
 	}
 }
