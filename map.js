@@ -385,6 +385,7 @@ function init() {
 		if (OtherInfo && String(OtherInfo).trim() !== '') linksHtml += `<p>${OtherInfo}</p><br>`;
 		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食：${lunch}あり</p><br>`;
 		else {linksHtml += `<p>昼食：なし</p><br>`;}
+		if (RegLink && String(RegLink).trim() !== '') linksHtml += `<a href="${RegLink}" target="_blank">レギュレーションはここから</a><br>`;
 		let imageHtml = '';
 		if (num && String(num).trim() !== '') {
 			const numValue = parseInt(String(num).trim());
