@@ -296,6 +296,7 @@ function init() {
 			const lunch = row[14] || '';
 			const num = row[15] || '';
 			const where = row[16] || '';
+			const RegLink = row[18] || '';
 			const latNum = parseFloat(lat), lonNum = parseFloat(lon);
 			if (!lat || !lon || isNaN(latNum) || isNaN(lonNum) || latNum < -90 || latNum > 90 || lonNum < -180 || lonNum > 180) {
 				markers.push(null); markerDataList.push(null); return;
@@ -325,12 +326,12 @@ function init() {
 					if (infoPanel) infoPanel.innerHTML = '';
 					lastClickedMarker = null;
 				} else {
-					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where);
+					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where, RegLink);
 					lastClickedMarker = marker;
 				}
 				const leftPanel = document.getElementById('left-panel');
 				if (leftPanel) {
-					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where);
+					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where, RegLink);
 					setupSlideshowListeners();
 					const backBtn = document.getElementById('back-to-list-btn');
 					if (backBtn) {
@@ -377,7 +378,7 @@ function init() {
 		showMarkerList(allRows);
 	}
 
-	function markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where) {
+	function markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where, RegLink) {
 		let linksHtml = '';
 		if (SiteLink && String(SiteLink).trim() !== '') linksHtml += `<a href="${SiteLink}" target="_blank">公式サイト</a><br>`;
 		if (BookLink && String(BookLink).trim() !== '') linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
