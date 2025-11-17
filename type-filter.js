@@ -10,6 +10,8 @@ class TypeFilter {
 		this.minDistance = 0;
 		this.maxDistance = 200;
 		this.currentMaxDistance = 200;
+		// all トグル時に切り替え前の選択を一時的に保持する
+		this._prevSelectedBeforeAllToggle = null;
 	}
 
 	initTypeFilterUI() {
@@ -32,11 +34,28 @@ class TypeFilter {
 		if (allInput) {
 			allInput.addEventListener('change', () => {
 				const checked = !!allInput.checked;
-				typeInputs.forEach(cb => cb.checked = checked);
+				// 変更前の選択を保存（復元に使う）
+				this._prevSelectedBeforeAllToggle = new Set(this.selectedTypes);
+				// チェック状態が変わる要素に対してのみ change イベントを発火して、
+				// 個別ハンドラ（handleIndoorOutdoorOff/On 等）を確実に実行させる。
+				typeInputs.forEach(cb => {
+					const prev = !!cb.checked;
+					if (prev === checked) return; // 状態変化なしならスキップ
+					cb.checked = checked;
+					try {
+						cb.dispatchEvent(new Event('change', { bubbles: true }));
+					} catch (e) {
+						// 互換性のためのフォールバック
+						const ev = document.createEvent('HTMLEvents');
+						ev.initEvent('change', true, false);
+						cb.dispatchEvent(ev);
+					}
+				});
+
+				// selectedTypes を最新版に更新（必要に応じて）
 				this.selectedTypes.clear();
 				if (checked) typeInputs.forEach(cb => this.selectedTypes.add(String(cb.getAttribute('data-type'))));
-				this.autoDisabledByIndoor.clear();
-				this.autoDisabledByOutdoor.clear();
+				// autoDisabled はここで消さない（個別処理で適切に管理されるべき）
 				this.triggerFilterChange();
 			});
 		}
@@ -124,6 +143,41 @@ class TypeFilter {
 			}
 		});
 		autoDisabledSet.clear();
+
+		// autoDisabled が空で、かつ all トグル前に細分類が選択されていた記録があれば
+		// その記録から現在の onType に関連する細分類を復元する。
+		if (this._prevSelectedBeforeAllToggle && this._prevSelectedBeforeAllToggle.size > 0) {
+			const fineKeys = new Set(['2','3','4','5','6','7']);
+			this._prevSelectedBeforeAllToggle.forEach(fineType => {
+				if (!fineKeys.has(fineType)) return;
+				const fineInput = typeInputs.find(input => String(input.getAttribute('data-type')) === fineType);
+				if (!fineInput || fineInput.checked) return;
+
+				// 復元するかは allRows を見て、該当細分類が onType に関連するフィールドを持つか判断する
+				let shouldRestore = false;
+				if (this.allRows && Array.isArray(this.allRows)) {
+					shouldRestore = this.allRows.some(row => {
+						if (!row || !Array.isArray(row)) return false;
+						const types = String(row[2] || '').split(/[^0-9]+/).filter(Boolean);
+						if (!types.includes(fineType)) return false;
+						// onType（'0' or '1'）がそのフィールドのタイプに含まれる場合、復元対象とする
+						if (types.includes(onType)) return true;
+						// メインタイプが付与されていない（0/1 が無い）フィールドも復元対象とする
+						if (!types.includes('0') && !types.includes('1')) return true;
+						return false;
+					});
+				} else {
+					// allRows が無ければ安全側で復元する
+					shouldRestore = true;
+				}
+
+				if (shouldRestore) {
+					fineInput.checked = true;
+				}
+			});
+			// 一度だけ使うのでクリア
+			this._prevSelectedBeforeAllToggle = null;
+		}
 	}
 
 	initLunchFilterUI() {
