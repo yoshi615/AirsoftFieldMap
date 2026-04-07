@@ -26,6 +26,14 @@ function normalizeText(str) {
 	return (str || '').toLowerCase().replace(/[\s\.\-＿‐―－ー・,，、!！?？"“”'’‘`´:：;；\[\]\(\)\{\}\/\\]/g, '');
 }
 
+function renderWithStrike(raw = '') {
+    return String(raw).replace(/~~(.*?)~~/g, '<span class="deleted-text">$1</span>');
+}
+
+function isStriked(raw = '') {
+    return /~~.*?~~/.test(String(raw));
+}
+
 function init() {
 	let lastClickedMarker = null;
 	let markers = [], markerDataList = [];
@@ -383,9 +391,9 @@ function init() {
 		if (SiteLink && String(SiteLink).trim() !== '') linksHtml += `<a href="${SiteLink}" target="_blank">公式サイト</a><br>`;
 		if (BookLink && String(BookLink).trim() !== '') linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
 		if (BusBookLink && String(BusBookLink).trim() !== '') linksHtml += `<a href="${BusBookLink}" target="_blank">送迎バス予約はここから</a><br>`;
-		if (OtherInfo && String(OtherInfo).trim() !== '') linksHtml += `<p>${OtherInfo}</p><br>`;
-		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食：${lunch}あり</p><br>`;
-		else {linksHtml += `<p>昼食：なし</p><br>`;}
+		if (OtherInfo && String(OtherInfo).trim() !== '') linksHtml += `<p>${renderWithStrike(OtherInfo)}</p><br>`;
+		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食：${renderWithStrike(lunch)}あり</p><br>`;
+		else {linksHtml += `<p>昼食：${renderWithStrike('なし')}</p><br>`;}
 		if (RegLink && String(RegLink).trim() !== '') linksHtml += `<a href="${RegLink}" target="_blank">レギュレーションはここから</a><br>`;
 		let imageHtml = '';
 		if (num && String(num).trim() !== '') {
@@ -422,12 +430,12 @@ function init() {
 		}
 		return `
 			<button id="back-to-list-btn" class="back-to-list-btn">一覧に戻る</button>
-			<h2>${field_name}</h2>
+			<h2>${renderWithStrike(field_name)}</h2>
 			${linksHtml}
-			<p>最寄り駅: ${NearestStation}</p>
+			<p>最寄り駅: ${renderWithStrike(NearestStation)}</p>
 			${whereHtml}
-			<p>定期会料金: ${RegularMeetingCharge}円</p>
-			<p>貸し切り料金: ${CharterCharge}円</p>
+			<p>定期会料金: ${renderWithStrike(RegularMeetingCharge)}円</p>
+			<p>貸し切り料金: ${renderWithStrike(CharterCharge)}円</p>
 			${imageHtml}
 		`;
 	}
@@ -524,7 +532,16 @@ function init() {
 			prefectureGroups[prefecture].forEach(row => {
 				const id = row[0] || '';
 				const field_name = row[3] || '';
-				html += `<li><button class="marker-list-btn" data-marker-id="${id}">${field_name}</button></li>`;
+				const closed = isStriked(field_name);
+
+				html += `<li>
+					<button
+						class="marker-list-btn${closed ? ' is-closed' : ''}"
+						${closed ? 'disabled aria-disabled="true" title="閉店/無効"' : `data-marker-id="${id}"`}
+					>
+						${renderWithStrike(field_name)}
+					</button>
+				</li>`;
 			});
 			
 			html += `
