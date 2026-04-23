@@ -505,7 +505,7 @@ body {
         transform: translateX(-50%);
         font-size: 16px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        color: #bebebe !important;
+        color: #000 !important;
         background: #ffffff;
         outline: none;
         box-sizing: border-box;
