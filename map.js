@@ -30,6 +30,12 @@ function renderWithStrike(raw = '') {
     return String(raw).replace(/~~(.*?)~~/g, '<span class="deleted-text">$1</span>');
 }
 
+function renderWithStrikeAndBreak(raw = '') {
+    return renderWithStrike(String(raw))
+        .replace(/\\n/g, '<br>')   // 文字列 "\n" を改行へ
+        .replace(/\r?\n/g, '<br>'); // 実改行も保険で対応
+}
+
 function isStriked(raw = '') {
     return /~~.*?~~/.test(String(raw));
 }
@@ -391,7 +397,7 @@ function init() {
 		if (SiteLink && String(SiteLink).trim() !== '') linksHtml += `<a href="${SiteLink}" target="_blank">公式サイト</a><br>`;
 		if (BookLink && String(BookLink).trim() !== '') linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
 		if (BusBookLink && String(BusBookLink).trim() !== '') linksHtml += `<a href="${BusBookLink}" target="_blank">送迎バス予約はここから</a><br>`;
-		if (OtherInfo && String(OtherInfo).trim() !== '') linksHtml += `<p>${renderWithStrike(OtherInfo)}</p><br>`;
+if (OtherInfo && String(OtherInfo).trim() !== '') {linksHtml += `<p>${renderWithStrikeAndBreak(OtherInfo)}</p><br>`;}
 		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食：${renderWithStrike(lunch)}あり</p><br>`;
 		else {linksHtml += `<p>昼食：${renderWithStrike('なし')}</p><br>`;}
 		if (RegLink && String(RegLink).trim() !== '') linksHtml += `<a href="${RegLink}" target="_blank">レギュレーションはここから</a><br>`;
