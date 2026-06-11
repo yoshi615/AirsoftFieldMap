@@ -48,6 +48,13 @@ function init() {
 	let currentLocationMarker = null;
 	let currentLocationPrefecture = null;
 	let expandedPrefectures = new Set();
+	let selectedRouteTarget = null;
+	let routePopup = null;
+	let previousMapState = null;
+	let isRouteVisible = false;
+	let currentRouteGeoJson = null;
+	const routeLayerId = 'field-route-layer';
+	const routeSourceId = 'field-route-source';
 	const typeFilter = new TypeFilter();
 	const baseMapStyle = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 	const gsiSatelliteStyle = {
@@ -80,6 +87,41 @@ function init() {
 		}
 	}
 
+	function saveCurrentMapState() {
+		if (!map) return;
+		const center = map.getCenter();
+		previousMapState = {
+			center: [center.lng, center.lat],
+			zoom: map.getZoom(),
+			bearing: map.getBearing(),
+			pitch: map.getPitch()
+		};
+	}
+
+	function resetActiveMarker() {
+		if (lastActiveMarkerIndex !== null && markers[lastActiveMarkerIndex]) {
+			const activeMarkerElement = markers[lastActiveMarkerIndex].getElement();
+			if (activeMarkerElement && activeMarkerElement.tagName === 'IMG') {
+				activeMarkerElement.src = 'images/pin_blue.png';
+			}
+		}
+		lastActiveMarkerIndex = null;
+		lastClickedMarker = null;
+	}
+
+	function restorePreviousMapState() {
+		if (!map || !previousMapState) return;
+		map.stop();
+		map.flyTo({
+			center: previousMapState.center,
+			zoom: previousMapState.zoom,
+			bearing: previousMapState.bearing,
+			pitch: previousMapState.pitch,
+			duration: 800
+		});
+		previousMapState = null;
+	}
+
 	showLoading();
 
 	initMap();
@@ -91,7 +133,8 @@ function init() {
 		const toggleTilesButton = document.getElementById('toggle-tiles');
 
 		allRows.forEach(row => {
-			const [, , , , lat, lon] = row;
+			const lat = row[6] || '';
+			const lon = row[7] || '';
 			const latNum = parseFloat(lat), lonNum = parseFloat(lon);
 			if (lat && lon && !isNaN(latNum) && !isNaN(lonNum) && latNum >= -90 && latNum <= 90 && lonNum >= -180 && lonNum <= 180) {
 				latSum += latNum; lonSum += lonNum; validPoints++; bounds.extend([lonNum, latNum]);
@@ -114,6 +157,13 @@ function init() {
 
 		async function restoreStyleDependentLayers() {
 			await addPrefectureBoundaries();
+			if (currentRouteGeoJson) {
+				ensureRouteLayer();
+				const routeSource = map.getSource(routeSourceId);
+				if (routeSource && typeof routeSource.setData === 'function') {
+					routeSource.setData(currentRouteGeoJson);
+				}
+			}
 			if (expandedPrefectures.size > 0 && window.updatePrefectureHighlight) {
 				window.updatePrefectureHighlight();
 			}
@@ -295,6 +345,195 @@ function init() {
 			);
 		}
 
+		function setRouteStatus(message, isError = false) {
+			const routeStatus = document.getElementById('route-status');
+			if (!routeStatus) return;
+			routeStatus.textContent = message || '';
+			routeStatus.classList.toggle('is-error', Boolean(isError));
+		}
+
+		function getCurrentLocationLngLat() {
+			if (!currentLocationMarker) return null;
+			const lngLat = currentLocationMarker.getLngLat();
+			if (!lngLat || Number.isNaN(lngLat.lng) || Number.isNaN(lngLat.lat)) return null;
+			return [lngLat.lng, lngLat.lat];
+		}
+
+		function ensureRouteLayer() {
+			if (!map || !map.getStyle()) return false;
+			if (!map.getSource(routeSourceId)) {
+				map.addSource(routeSourceId, {
+					type: 'geojson',
+					data: {
+						type: 'FeatureCollection',
+						features: []
+					}
+				});
+			}
+			if (!map.getLayer(routeLayerId)) {
+				map.addLayer({
+					id: routeLayerId,
+					type: 'line',
+					source: routeSourceId,
+					layout: {
+						'line-cap': 'round',
+						'line-join': 'round'
+					},
+					paint: {
+						'line-color': '#a2ffa2',
+						'line-width': 5,
+						'line-opacity': 0.9
+					}
+				});
+			}
+			return true;
+		}
+
+		function updateRouteLayer(routeGeometry) {
+			if (!ensureRouteLayer()) return;
+			currentRouteGeoJson = {
+				type: 'FeatureCollection',
+				features: [{
+					type: 'Feature',
+					properties: {},
+					geometry: {
+						type: 'LineString',
+						coordinates: routeGeometry
+					}
+				}]
+			};
+			const source = map.getSource(routeSourceId);
+			if (source && typeof source.setData === 'function') {
+				source.setData(currentRouteGeoJson);
+			}
+		}
+
+		function hideRoute() {
+			isRouteVisible = false;
+			currentRouteGeoJson = null;
+			if (routePopup) {
+				routePopup.remove();
+				routePopup = null;
+			}
+			if (map && map.getSource(routeSourceId)) {
+				const source = map.getSource(routeSourceId);
+				if (source && typeof source.setData === 'function') {
+					source.setData({
+						type: 'FeatureCollection',
+						features: []
+					});
+				}
+			}
+			setRouteStatus('');
+		}
+
+		async function showRouteToField(fieldLat, fieldLon, fieldName) {
+			const startLngLat = getCurrentLocationLngLat();
+			if (!startLngLat) {
+				setRouteStatus('現在地が取得できないため、経路を表示できません。', true);
+				return;
+			}
+
+			const endLat = parseFloat(fieldLat);
+			const endLon = parseFloat(fieldLon);
+			if (Number.isNaN(endLat) || Number.isNaN(endLon)) {
+				setRouteStatus('目的地の座標が不正です。', true);
+				return;
+			}
+
+			setRouteStatus('経路を検索しています...');
+
+		const routeUrls = [
+			`https://router.project-osrm.org/route/v1/driving/${startLngLat[0]},${startLngLat[1]};${endLon},${endLat}?overview=full&geometries=geojson&steps=false&exclude=motorway`,
+			`https://router.project-osrm.org/route/v1/driving/${startLngLat[0]},${startLngLat[1]};${endLon},${endLat}?overview=full&geometries=geojson&steps=false`
+		];
+
+			try {
+			let routeData = null;
+			for (const routeUrl of routeUrls) {
+				const response = await fetch(routeUrl);
+				routeData = await response.json();
+				if (routeData.routes && routeData.routes.length) {
+					break;
+				}
+				}
+			if (!routeData || !routeData.routes || !routeData.routes.length) {
+				throw new Error('経路が見つかりませんでした');
+			}
+
+				const route = routeData.routes[0];
+				updateRouteLayer(route.geometry.coordinates);
+				isRouteVisible = true;
+
+				const distanceKm = (route.distance / 1000).toFixed(1);
+				const durationMin = Math.round(route.duration / 60);
+				setRouteStatus();
+
+				if (routePopup) {
+					routePopup.remove();
+				}
+				routePopup = new maplibregl.Popup({ closeButton: true, closeOnClick: false, offset: 12 })
+					.setLngLat([endLon, endLat])
+					.setHTML(`<strong>${fieldName || '目的地'}</strong><br>約${distanceKm}km / 車で約${durationMin}分`)
+					.addTo(map);
+
+				const bounds = new maplibregl.LngLatBounds();
+				bounds.extend(startLngLat);
+				(route.geometry.coordinates || []).forEach(coord => bounds.extend(coord));
+				map.fitBounds(bounds, { padding: 80, duration: 900, maxZoom: 16 });
+			} catch (error) {
+				console.error('経路の取得に失敗しました:', error);
+				setRouteStatus('経路の取得に失敗しました。', true);
+			}
+		}
+
+		function bindMarkerInfoActions(container) {
+			if (!container) return;
+
+			const backButton = container.querySelector('#back-to-list-btn');
+			if (backButton) {
+				backButton.addEventListener('click', function() {
+					hideRoute();
+					resetActiveMarker();
+					showMarkerList(rows);
+					restorePreviousMapState();
+				});
+			}
+
+			container.querySelectorAll('.route-to-field-btn').forEach(button => {
+				button.addEventListener('click', function() {
+					const fieldLat = this.getAttribute('data-field-lat');
+					const fieldLon = this.getAttribute('data-field-lon');
+					const fieldName = this.getAttribute('data-field-name') || '';
+					const nextTarget = {
+						lat: parseFloat(fieldLat),
+						lon: parseFloat(fieldLon),
+						field_name: fieldName
+					};
+					const isSameTarget = isRouteVisible
+						&& selectedRouteTarget
+						&& Number(selectedRouteTarget.lat) === nextTarget.lat
+						&& Number(selectedRouteTarget.lon) === nextTarget.lon;
+
+					if (isSameTarget) {
+						hideRoute();
+						selectedRouteTarget = nextTarget;
+						return;
+					}
+
+					selectedRouteTarget = {
+						lat: nextTarget.lat,
+						lon: nextTarget.lon,
+						field_name: fieldName
+					};
+					if (isRouteVisible) {
+						hideRoute();
+					}
+					showRouteToField(fieldLat, fieldLon, fieldName);
+				});
+			});
+		}
+
 		map.on('load', function() {
 			if (validPoints > 0 && !bounds.isEmpty()) {
 				map.fitBounds(bounds, {
@@ -387,56 +626,25 @@ function init() {
 				const thisImg = marker.getElement();
 				if (thisImg && thisImg.tagName === 'IMG') thisImg.src = 'images/pin_magenta.png';
 				lastActiveMarkerIndex = index;
+				selectedRouteTarget = { lat: latNum, lon: lonNum, field_name };
+				if (isRouteVisible) {
+					hideRoute();
+				}
 
 				if (lastClickedMarker === marker) {
 					if (infoPanel) infoPanel.innerHTML = '';
 					lastClickedMarker = null;
 				} else {
-					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where, RegLink);
+					if (infoPanel) infoPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where, RegLink, latNum, lonNum);
 					lastClickedMarker = marker;
 				}
 				const leftPanel = document.getElementById('left-panel');
 				if (leftPanel) {
-					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where, RegLink);
+					leftPanel.innerHTML = markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where, RegLink, latNum, lonNum);
 					setupSlideshowListeners();
-					const backBtn = document.getElementById('back-to-list-btn');
-					if (backBtn) {
-						backBtn.addEventListener('click', function() {
-							if (lastActiveMarkerIndex !== null && markers[lastActiveMarkerIndex]) {
-								const prevImg = markers[lastActiveMarkerIndex].getElement();
-								if (prevImg && prevImg.tagName === 'IMG') prevImg.src = 'images/pin_blue.png';
-								lastActiveMarkerIndex = null;
-							}
-							showMarkerList(rows);
-							if (expandedPrefectures.size > 0) {
-								const firstExpandedPrefecture = Array.from(expandedPrefectures)[0];
-								const prefectureConfig = prefectureCenterZoom[firstExpandedPrefecture];
-								if (prefectureConfig) {
-									map.flyTo({
-										center: prefectureConfig.center,
-										zoom: prefectureConfig.zoom,
-										duration: 1000
-									});
-								}
-							} else {
-								if (currentLocationMarker) {
-									const currentLngLat = currentLocationMarker.getLngLat();
-									map.flyTo({
-										center: [currentLngLat.lng, currentLngLat.lat],
-										zoom: 11,
-										duration: 1000
-									});
-								} else {
-									map.flyTo({
-										center: [139.98886293394258, 35.853556991089334],
-										zoom: 8.7,
-										duration: 1000
-									});
-								}
-							}
-						});
-					}
+					bindMarkerInfoActions(leftPanel);
 				}
+				saveCurrentMapState();
 				map.flyTo({ center: [lonNum, latNum], zoom: 17 });
 				if (window.innerWidth <= 767) setTimeout(() => map.resize(), 300);
 			});
@@ -444,12 +652,12 @@ function init() {
 		showMarkerList(allRows);
 	}
 
-	function markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where, RegLink) {
+	function markerInfoHtml(id, field_name, SiteLink, BookLink, BusBookLink, NearestStation, RegularMeetingCharge, CharterCharge, OtherInfo, lunch, num, where, RegLink, lat, lon) {
 		let linksHtml = '';
 		if (SiteLink && String(SiteLink).trim() !== '') linksHtml += `<a href="${SiteLink}" target="_blank">公式サイト</a><br>`;
 		if (BookLink && String(BookLink).trim() !== '') linksHtml += `<a href="${BookLink}" target="_blank">定例会・貸し切りの予約はここから</a><br>`;
 		if (BusBookLink && String(BusBookLink).trim() !== '') linksHtml += `<a href="${BusBookLink}" target="_blank">送迎バス予約はここから</a><br>`;
-if (OtherInfo && String(OtherInfo).trim() !== '') {linksHtml += `<p>${renderWithStrikeAndBreak(OtherInfo)}</p><br>`;}
+		if (OtherInfo && String(OtherInfo).trim() !== '') {linksHtml += `<p>${renderWithStrikeAndBreak(OtherInfo)}</p><br>`;}
 		if (lunch && String(lunch).trim() !== '') linksHtml += `<p>昼食：${renderWithStrike(lunch)}あり</p><br>`;
 		else {linksHtml += `<p>昼食：${renderWithStrike('なし')}</p><br>`;}
 		if (RegLink && String(RegLink).trim() !== '') linksHtml += `<a href="${RegLink}" target="_blank">レギュレーションはここから</a><br>`;
@@ -487,9 +695,11 @@ if (OtherInfo && String(OtherInfo).trim() !== '') {linksHtml += `<p>${renderWith
 			whereHtml = `<p>所在地: ${String(where).trim()}</p>`;
 		}
 		return `
-			<button id="back-to-list-btn" class="back-to-list-btn">一覧に戻る</button>
-			<h2>${renderWithStrike(field_name)}</h2>
-			${linksHtml}
+		<button id="back-to-list-btn" class="back-to-list-btn">一覧に戻る</button>
+		<h2>${renderWithStrike(field_name)}</h2>
+		<button type="button" class="route-to-field-btn" data-field-lat="${lat ?? ''}" data-field-lon="${lon ?? ''}" data-field-name="${field_name}">経路</button>
+		<div id="route-status" class="route-status"></div>
+		${linksHtml}
 			<p>最寄り駅: ${renderWithStrike(NearestStation)}</p>
 			${whereHtml}
 			<p>定期会料金: ${renderWithStrike(RegularMeetingCharge)}円</p>
@@ -927,6 +1137,14 @@ if (OtherInfo && String(OtherInfo).trim() !== '') {linksHtml += `<p>${renderWith
 				closeModal();
 			}
 		});
+
+		if (currentRouteGeoJson) {
+			ensureRouteLayer();
+			const source = map.getSource(routeSourceId);
+			if (source && typeof source.setData === 'function') {
+				source.setData(currentRouteGeoJson);
+			}
+		}
 	}
 
 	function extractFieldIdFromSrc(src) {

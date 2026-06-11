@@ -41,6 +41,28 @@ body {
     cursor: pointer;
     color: #fff;
 }
+.route-to-field-btn {
+    margin: 8px 0 6px;
+    padding: 8px 14px;
+    border: 1px solid #888;
+    background: #7e7e7e;
+    color: #fff;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.route-to-field-btn:hover {
+    background: #383737;
+}
+.route-status {
+    min-height: 1.4em;
+    margin: 4px 0 10px;
+    font-size: 14px;
+    color: #444;
+}
+.route-status.is-error {
+    color: #b00020;
+}
 .nearest-station-marker {
 	width: 9px;
 	height: 9px;
