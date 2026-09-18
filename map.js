@@ -40,8 +40,41 @@ function isStriked(raw = '') {
     return /~~.*?~~/.test(String(raw));
 }
 
+const VISITOR_STORAGE_KEY = 'airsoft-field-map:visitor';
+
+function getOrCreateVisitorProfile() {
+    try {
+        const raw = localStorage.getItem(VISITOR_STORAGE_KEY);
+        const now = new Date().toISOString();
+
+        if (raw) {
+            const profile = JSON.parse(raw);
+            profile.lastVisitAt = now;
+            profile.visitCount = (profile.visitCount || 0) + 1;
+            localStorage.setItem(VISITOR_STORAGE_KEY, JSON.stringify(profile));
+            return profile;
+        }
+
+		
+        const profile = {
+            visitorId: (crypto.randomUUID ? crypto.randomUUID() : `visitor-${Date.now()}-${Math.random().toString(16).slice(2)}`),
+            firstVisitAt: now,
+            lastVisitAt: now,
+            visitCount: 1
+        };
+
+        localStorage.setItem(VISITOR_STORAGE_KEY, JSON.stringify(profile));
+        return profile;
+    } catch (error) {
+        console.warn('visitor profile could not be stored:', error);
+        return null;
+    }
+}
+
 function init() {
-	let lastClickedMarker = null;
+	const visitorProfile = getOrCreateVisitorProfile();
+    if (visitorProfile) {console.log('visitor profile:', visitorProfile);}
+    let lastClickedMarker = null;
 	let markers = [], markerDataList = [];
 	let rows = data.FieldList, allRows = data.FieldList;
 	let lastActiveMarkerIndex = null;
