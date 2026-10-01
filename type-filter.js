@@ -371,48 +371,23 @@ class TypeFilter {
 			});
 		}
 
-		if (selectedTypesLive && !allChecked) {
-			const fineKeys = ['2','3','4','5','6','7'];
-			const selectedFine = fineKeys.filter(k => selectedTypesLive.has(k));
-			const has0Selected = selectedTypesLive.has('0');
-			const has1Selected = selectedTypesLive.has('1');
+		if (selectedTypesLive) {
+			const typeInputs = Array.from(
+				typeContainer.querySelectorAll('input[type="checkbox"][data-type]')
+			).filter(input => input.getAttribute('data-type') !== 'all');
 
-			filteredRows = filteredRows.filter(row => {
-				if (!row || !Array.isArray(row)) return false;
-				const raw = String(row[2] || '');
-				const types = raw.split(/[^0-9]+/).filter(Boolean);
-				const has0 = types.includes('0');
-				const has1 = types.includes('1');
-				if (selectedFine.length > 0 && !has0Selected && !has1Selected) {
-					return types.some(t => selectedFine.includes(t));
-				}
-				if (!has0Selected && !has1Selected) {
-					if (has0 || has1) return false;
-					return types.some(t => selectedTypesLive.has(t));
-				}
-				if (has0Selected && !has1Selected) {
-					if (!has0) return false;
-					if (selectedFine.length > 0) {
-						return types.some(t => selectedFine.includes(t) || t === '0');
-					}
-					return true;
-				}
-				if (!has0Selected && has1Selected) {
-					if (!has1) return false;
-					if (selectedFine.length > 0) {
-						return types.some(t => selectedFine.includes(t) || t === '1');
-					}
-					return true;
-				}
-				if (has0Selected && has1Selected) {
-					if (selectedFine.length > 0) {
-						return types.some(t => selectedTypesLive.has(t));
-					}
-					return has0 || has1;
-				}
+			const allChecked = typeInputs.length > 0 &&
+				typeInputs.every(input => input.checked);
+			if (!allChecked) {
+				filteredRows = filteredRows.filter(row => {
+					if (!row || !Array.isArray(row)) return false;
 
-				return false;
-			});
+					const types = String(row[2] || '')
+						.split(/[^0-9]+/)
+						.filter(Boolean);
+					return types.some(type => selectedTypesLive.has(type));
+				});
+			}
 		}
 
 		if (this.lunchOnly) {
