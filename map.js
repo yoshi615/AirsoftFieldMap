@@ -89,6 +89,7 @@ function init() {
 	const routeLayerId = 'field-route-layer';
 	const routeSourceId = 'field-route-source';
 	const typeFilter = new TypeFilter();
+	typeFilter.allRows = allRows;
 	const baseMapStyle = 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
 	const gsiSatelliteStyle = {
 		version: 8,
@@ -618,20 +619,13 @@ function init() {
 		console.log('NearestStation markers to add:', data.NearestStation);
 		allRows.forEach((row, index) => {
 			const id = row[0] || '';
-			const category = row[1] || '';
-			const type = row[2] || '';
 			const field_name = row[3] || '';
 			const RegularMeetingCharge = row[4] || '';
 			const CharterCharge = row[5] || '';
 			const lat = row[6] || '';
 			const lon = row[7] || '';
-			const SiteLink = row[8] || '';
-			const BookLink = row[9] || '';
-			const BusBookLink = row[10] || '';
-			const Reading = row[11] || '';
-			const NearestStation = row[12] || '';
-			const OtherInfo = row[13] || '';
-			const lunch = row[14] || '';
+			const SiteLink = row[8] || '', BookLink = row[9] || '', BusBookLink = row[10] || '';
+			const NearestStation = row[12] || '', OtherInfo = row[13] || '', lunch = row[14] || '';
 			const num = row[15] || '';
 			const where = row[16] || '';
 			const RegLink = row[18] || '';
@@ -741,52 +735,40 @@ function init() {
 		`;
 	}
 
+	function sortRowsByReading(rowsToShow) {
+		return [...rowsToShow].sort((a, b) => {
+			const key = row => {
+				const reading = ((row && row[11]) || '').toString().normalize('NFKC');
+				return toHiragana(reading || ((row && row[3]) || '').toString().normalize('NFKC'));
+			};
+			return key(a).localeCompare(key(b), 'ja', { sensitivity: 'base' });
+		});
+	}
+
 	function showMarkerList(rowsToShow) {
 		const leftPanel = document.getElementById('left-panel');
 		if (!leftPanel) return;
 		hideLoading();
 		rows = rowsToShow;
-		const sortedRows = [...rowsToShow].sort((a, b) => {
-			const readingA = ((a && a[11]) || '').toString().normalize('NFKC');
-			const readingB = ((b && b[11]) || '').toString().normalize('NFKC');
-			const fallbackA = ((a && a[3]) || '').toString().normalize('NFKC');
-			const fallbackB = ((b && b[3]) || '').toString().normalize('NFKC');
-			const keyA = readingA || fallbackA;
-			const keyB = readingB || fallbackB;
-			const hiraA = toHiragana(keyA);
-			const hiraB = toHiragana(keyB);
-			return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
-		});
+		const sortedRows = sortRowsByReading(rowsToShow);
 
 		const prefectureGroups = {};
 		sortedRows.forEach(row => {
 			if (!row || !Array.isArray(row)) return;
 			
-			const id = row[0] || '';
 			const category = row[1] || '';
 			const field_name = row[3] || '';
-			const nearestStation = row[12] || '';
 			
 			if (!field_name || String(field_name).trim() === '') return;
 			
-			const prefecture = extractPrefecture(field_name, nearestStation, category);
+			const prefecture = extractPrefecture(category);
 			if (!prefectureGroups[prefecture]) {
 				prefectureGroups[prefecture] = [];
 			}
 			prefectureGroups[prefecture].push(row);
 		});
 		Object.keys(prefectureGroups).forEach(prefecture => {
-			prefectureGroups[prefecture].sort((a, b) => {
-				const readingA = ((a && a[11]) || '').toString().normalize('NFKC');
-				const readingB = ((b && b[11]) || '').toString().normalize('NFKC');
-				const fallbackA = ((a && a[3]) || '').toString().normalize('NFKC');
-				const fallbackB = ((b && b[3]) || '').toString().normalize('NFKC');
-				const keyA = readingA || fallbackA;
-				const keyB = readingB || fallbackB
-				const hiraA = toHiragana(keyA);
-				const hiraB = toHiragana(keyB);
-				return hiraA.localeCompare(hiraB, 'ja', { sensitivity: 'base' });
-			});
+			prefectureGroups[prefecture] = sortRowsByReading(prefectureGroups[prefecture]);
 		});
 
 		const prefectureOrder = [
@@ -944,7 +926,7 @@ function init() {
 		}
 	}
 
-	function extractPrefecture(fieldName, nearestStation, category) {
+	function extractPrefecture(category) {
 		const prefectureMap = {
 			'0': '東京','1': '千葉', '2': '茨城','3': '埼玉','4': '神奈川','5': '栃木','6': '群馬','7': '静岡','8': '愛知','9': '大阪','10': '兵庫','11': '京都','12': '福岡','13': '北海道','14': '青森','15': '岩手','16': '宮城','17': '秋田','18': '山形','19': '福島','20': '新潟','21': '富山','22': '石川','23': '福井','24': '山梨','25': '長野','26': '岐阜','27': '三重','28': '滋賀','29': '奈良','30': '和歌山','31': '鳥取','32': '島根','33': '岡山','34': '広島','35': '山口','36': '徳島','37': '香川','38': '愛媛','39': '高知','40': '佐賀','41': '長崎','42': '熊本','43': '大分','44': '宮崎','45': '鹿児島','46': '沖縄'
 		};
@@ -969,9 +951,7 @@ function init() {
 			if (!row || !Array.isArray(row)) return;
 
 			const category = row[1] || '';
-			const field_name = row[3] || '';
-			const nearestStation = row[12] || '';
-			const prefecture = extractPrefecture(field_name, nearestStation, category);
+			const prefecture = extractPrefecture(category);
 
 			const matchesFilter = filteredIds.has(row[0]);
 			const isToggleExpanded = expandedPrefectures.has(prefecture);

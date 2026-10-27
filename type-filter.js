@@ -14,22 +14,91 @@ class TypeFilter {
 		this._prevSelectedBeforeAllToggle = null;
 	}
 
+	getTypeInputs(container) {
+		return Array.from(container.querySelectorAll('input[type="checkbox"][data-type]'))
+			.filter(input => input.getAttribute('data-type') !== 'all');
+	}
+
+	getRowTypes(row) {
+		return row && Array.isArray(row)
+			? String(row[2] || '').split(/[^0-9]+/).filter(Boolean)
+			: [];
+	}
+
+	syncSelectedTypes(typeInputs) {
+		this.selectedTypes = new Set(
+			typeInputs.filter(input => input.checked).map(input => String(input.getAttribute('data-type')))
+		);
+	}
+
+	disableMainTypesWhenNoFineType(typeInputs) {
+		const fineTypesSelected = typeInputs.some(input => {
+			const type = String(input.getAttribute('data-type'));
+			return type !== '0' && type !== '1' && input.checked;
+		});
+		if (fineTypesSelected) return;
+
+		typeInputs.forEach(input => {
+			const type = String(input.getAttribute('data-type'));
+			if (type === '0' || type === '1') input.checked = false;
+		});
+	}
+
+	enableMatchingMainTypes(typeInputs, fineType) {
+		if (!this.allRows) return;
+
+		const matchingMainTypes = new Set();
+		this.allRows.forEach(row => {
+			const types = this.getRowTypes(row);
+			if (!types.includes(fineType)) return;
+			['0', '1'].forEach(mainType => {
+				if (types.includes(mainType)) matchingMainTypes.add(mainType);
+			});
+		});
+
+		typeInputs.forEach(input => {
+			const type = String(input.getAttribute('data-type'));
+			if (matchingMainTypes.has(type)) input.checked = true;
+		});
+	}
+
+	disableUnavailableMainTypes(typeInputs) {
+		if (!this.allRows) return;
+
+		const selectedFineTypes = new Set(
+			typeInputs
+				.filter(input => {
+					const type = String(input.getAttribute('data-type'));
+					return type !== '0' && type !== '1' && input.checked;
+				})
+				.map(input => String(input.getAttribute('data-type')))
+		);
+
+		typeInputs.forEach(input => {
+			const mainType = String(input.getAttribute('data-type'));
+			if ((mainType !== '0' && mainType !== '1') || !input.checked) return;
+
+			const hasMatchingField = this.allRows.some(row => {
+				const types = this.getRowTypes(row);
+				return types.includes(mainType) &&
+					types.some(type => selectedFineTypes.has(type));
+			});
+			if (!hasMatchingField) input.checked = false;
+		});
+	}
+
 	initTypeFilterUI() {
 		const container = document.getElementById('type-filter');
 		if (!container) return;
 
 		const allInput = container.querySelector('input[data-type="all"]');
-		const typeInputs = Array.from(container.querySelectorAll('input[type="checkbox"][data-type]'))
-			.filter(i => String(i.getAttribute('data-type')) !== 'all');
+		const typeInputs = this.getTypeInputs(container);
 
 		if (allInput && allInput.checked) {
 			typeInputs.forEach(cb => cb.checked = true);
 		}
 
-		this.selectedTypes.clear();
-		typeInputs.forEach(cb => { 
-			if (cb.checked) this.selectedTypes.add(String(cb.getAttribute('data-type'))); 
-		});
+		this.syncSelectedTypes(typeInputs);
 
 		if (allInput) {
 			allInput.addEventListener('change', () => {
@@ -52,9 +121,7 @@ class TypeFilter {
 					}
 				});
 
-				// selectedTypes を最新版に更新（必要に応じて）
-				this.selectedTypes.clear();
-				if (checked) typeInputs.forEach(cb => this.selectedTypes.add(String(cb.getAttribute('data-type'))));
+				this.syncSelectedTypes(typeInputs);
 				// autoDisabled はここで消さない（個別処理で適切に管理されるべき）
 				this.triggerFilterChange();
 			});
@@ -72,10 +139,16 @@ class TypeFilter {
 					this.handleIndoorOutdoorOn(dataType, typeInputs);
 				}
 
-				this.selectedTypes.clear();
-				typeInputs.forEach(c => { 
-					if (c.checked) this.selectedTypes.add(String(c.getAttribute('data-type'))); 
-				});
+				if (dataType !== '0' && dataType !== '1' && !cb.checked) {
+					this.disableMainTypesWhenNoFineType(typeInputs);
+					this.disableUnavailableMainTypes(typeInputs);
+				}
+
+				if (dataType !== '0' && dataType !== '1' && cb.checked) {
+					this.enableMatchingMainTypes(typeInputs, dataType);
+				}
+
+				this.syncSelectedTypes(typeInputs);
 
 				if (allInput) {
 					const allCheckedNow = typeInputs.every(c => c.checked);
@@ -107,9 +180,8 @@ class TypeFilter {
 			if (!fineInput || !fineInput.checked) return;
 
 			const hasVisibleFields = this.allRows.some(row => {
-				if (!row || !Array.isArray(row)) return false;
-				const raw = String(row[2] || '');
-				const types = raw.split(/[^0-9]+/).filter(Boolean);
+				const types = this.getRowTypes(row);
+				if (!types.length) return false;
 				if (!types.includes(fineType)) return false;
 				const has0 = types.includes('0');
 				const has1 = types.includes('1');
@@ -157,8 +229,8 @@ class TypeFilter {
 				let shouldRestore = false;
 				if (this.allRows && Array.isArray(this.allRows)) {
 					shouldRestore = this.allRows.some(row => {
-						if (!row || !Array.isArray(row)) return false;
-						const types = String(row[2] || '').split(/[^0-9]+/).filter(Boolean);
+						const types = this.getRowTypes(row);
+						if (!types.length) return false;
 						if (!types.includes(fineType)) return false;
 						// onType（'0' or '1'）がそのフィールドのタイプに含まれる場合、復元対象とする
 						if (types.includes(onType)) return true;
@@ -211,59 +283,23 @@ class TypeFilter {
 	}
 
 	setupFilterToggle() {
-		const filterBtn = document.getElementById('filter-toggle-btn');
-		const typeFilter = document.getElementById('type-filter');
-		if (!filterBtn || !typeFilter) return;
-
-		filterBtn.addEventListener('click', () => {
-			const isCollapsed = typeFilter.classList.toggle('collapsed');
-			filterBtn.setAttribute('aria-expanded', String(!isCollapsed));
-		});
-
-		function updateFilterByWidth() {
-			if (window.innerWidth <= 767) {
-				if (!typeFilter.classList.contains('collapsed')) {
-					typeFilter.classList.add('collapsed');
-					filterBtn.setAttribute('aria-expanded', 'false');
-				}
-				filterBtn.style.display = 'block';
-			} else {
-				typeFilter.classList.remove('collapsed');
-				filterBtn.style.display = 'none';
-				filterBtn.setAttribute('aria-expanded', 'true');
-				typeFilter.style.display = '';
-			}
-		}
-
-		updateFilterByWidth();
-		window.addEventListener('resize', updateFilterByWidth);
-
-		const applyCollapsedVisibility = () => {
-			if (typeFilter.classList.contains('collapsed')) {
-				typeFilter.style.display = 'none';
-			} else {
-				typeFilter.style.display = '';
-			}
-		};
-		applyCollapsedVisibility();
-		const observer = new MutationObserver(mutations => {
-			for (const m of mutations) {
-				if (m.attributeName === 'class') {
-					applyCollapsedVisibility();
-				}
-			}
-		});
-		observer.observe(typeFilter, { attributes: true });
+		this.setupResponsiveToggle('filter-toggle-btn', 'type-filter');
 	}
 
 	setupOptionsMobileToggle() {
-		const btn = document.getElementById('options-toggle-mobile');
-		const panel = document.getElementById('options-filter');
+		this.setupResponsiveToggle('options-toggle-mobile', 'options-filter');
+	}
+
+	setupResponsiveToggle(buttonId, panelId) {
+		const btn = document.getElementById(buttonId);
+		const panel = document.getElementById(panelId);
 		if (!btn || !panel) return;
+
 		btn.addEventListener('click', () => {
 			const isCollapsed = panel.classList.toggle('collapsed');
 			btn.setAttribute('aria-expanded', String(!isCollapsed));
 		});
+
 		function updateByWidth() {
 			if (window.innerWidth <= 767) {
 				if (!panel.classList.contains('collapsed')) panel.classList.add('collapsed');
@@ -278,13 +314,14 @@ class TypeFilter {
 		}
 		updateByWidth();
 		window.addEventListener('resize', updateByWidth);
+
 		const applyCollapsedVisibility = () => {
 			if (panel.classList.contains('collapsed')) panel.style.display = 'none';
 			else panel.style.display = '';
 		};
 		applyCollapsedVisibility();
-		const mo = new MutationObserver(() => applyCollapsedVisibility());
-		mo.observe(panel, { attributes: true });
+		new MutationObserver(() => applyCollapsedVisibility())
+			.observe(panel, { attributes: true });
 	}
 
 	applyFilters(allRows, toHiragana, toKatakana, toRomaji, toKatakanaFromAlphabet, normalizeText) {
@@ -296,13 +333,9 @@ class TypeFilter {
 
 		const typeContainer = document.getElementById('type-filter');
 		let selectedTypesLive = null;
-		let allChecked = true;
 		if (typeContainer) {
-			const allInput = typeContainer.querySelector('input[data-type="all"]');
-			const typeInputs = Array.from(typeContainer.querySelectorAll('input[type="checkbox"][data-type]'))
-				.filter(i => String(i.getAttribute('data-type')) !== 'all');
+			const typeInputs = this.getTypeInputs(typeContainer);
 			selectedTypesLive = new Set(typeInputs.filter(i => i.checked).map(i => String(i.getAttribute('data-type'))));
-			allChecked = !!(allInput && allInput.checked);
 		}
 
 		let filteredRows = allRows;
@@ -372,22 +405,32 @@ class TypeFilter {
 		}
 
 		if (selectedTypesLive) {
-			const typeInputs = Array.from(
-				typeContainer.querySelectorAll('input[type="checkbox"][data-type]')
-			).filter(input => input.getAttribute('data-type') !== 'all');
+			const typeInputs = this.getTypeInputs(typeContainer);
+			const mainTypes = new Set(['0', '1']);
+			const selectedMainTypes = new Set(
+				[...selectedTypesLive].filter(type => mainTypes.has(type))
+			);
+			const selectedFineTypes = new Set(
+				[...selectedTypesLive].filter(type => !mainTypes.has(type))
+			);
+			const allMainTypesSelected = selectedMainTypes.size === mainTypes.size;
+			const allFineTypesSelected = typeInputs
+				.filter(input => !mainTypes.has(input.getAttribute('data-type')))
+				.every(input => input.checked);
 
-			const allChecked = typeInputs.length > 0 &&
-				typeInputs.every(input => input.checked);
-			if (!allChecked) {
-				filteredRows = filteredRows.filter(row => {
-					if (!row || !Array.isArray(row)) return false;
+			filteredRows = filteredRows.filter(row => {
+				const types = this.getRowTypes(row);
+				if (!types.length) return false;
 
-					const types = String(row[2] || '')
-						.split(/[^0-9]+/)
-						.filter(Boolean);
-					return types.some(type => selectedTypesLive.has(type));
-				});
-			}
+				const rowMainTypes = types.filter(type => mainTypes.has(type));
+				const matchesMain = allMainTypesSelected ||
+					!rowMainTypes.length ||
+					rowMainTypes.some(type => selectedMainTypes.has(type));
+				const matchesFine = allFineTypesSelected ||
+					types.some(type => selectedFineTypes.has(type));
+
+				return matchesMain && matchesFine;
+			});
 		}
 
 		if (this.lunchOnly) {
